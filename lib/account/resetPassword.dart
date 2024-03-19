@@ -3,6 +3,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 
+import '../api/api.dart';
+
 class ResetPasswordPage extends StatefulWidget {
   const ResetPasswordPage({super.key});
 
@@ -87,11 +89,10 @@ class _ResetPasswordPageState extends State<ResetPasswordPage>
       return;
     }
 
-    print('email: $email, validCode: $validCode, password: $password');
+    debugPrint('email: $email, validCode: $validCode, password: $password');
 
     // 向后端发起注册请求（邮箱）
-    const String emailRegisterApi =
-        'http://60.205.143.180:8080/api/auth/reset-password';
+    const String emailRegisterApi = '$ip/api/auth/reset-password';
 
     // 成功发送请求
     try {
@@ -100,10 +101,10 @@ class _ResetPasswordPageState extends State<ResetPasswordPage>
         'password': password,
         'code': validCode,
       });
-      print(response.data);
+      debugPrint(response.data);
 
       if (response.data["code"] == 200) {
-        print("重置成功");
+        debugPrint("重置成功");
         // showSuccessSignUpDialog();
         AlertDialog(
           title: const Text('重置密码成功'),
@@ -137,7 +138,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage>
     on DioException catch (error) {
       AlertDialog(
         title: const Text('重置密码失败'),
-        content: Text('重置密码失败'),
+        content: const Text('重置密码失败'),
         actions: <Widget>[
           TextButton(
             onPressed: () {
@@ -154,18 +155,18 @@ class _ResetPasswordPageState extends State<ResetPasswordPage>
   Future<void> getValidCode() async {
     final String email = emailController.text;
     final String emailGetValidCodeApi =
-        "http://60.205.143.180:8080/api/auth/ask-code?email=${email}&type=reset";
+        "http://60.205.143.180:8080/api/auth/ask-code?email=$email&type=reset";
 
     Response response;
     response = await dio.get(emailGetValidCodeApi);
-    print(response.data.toString());
+    debugPrint(response.data.toString());
 
     if (response.data["code"] == 200) {
-      print("获取验证码成功");
+      debugPrint("获取验证码成功");
       validCodeSentHintText = "验证码已经发送";
       sentValidCodeState = 1;
     } else {
-      print("获取验证码失败");
+      debugPrint("获取验证码失败");
       validCodeSentHintText = response.data["message"];
 
       if (response.data["message"] ==
@@ -185,388 +186,406 @@ class _ResetPasswordPageState extends State<ResetPasswordPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: false,
-      body: Container(
-        constraints: const BoxConstraints.expand(),
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/images/bg2.jpg'),
-            fit: BoxFit.cover,
+      resizeToAvoidBottomInset: true,
+      body: SingleChildScrollView(
+        child: Container(
+          height: MediaQuery.of(context).size.height,
+          decoration: const BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage('assets/images/bg2.jpg'),
+              fit: BoxFit.cover,
+            ),
           ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // 插图
-            Container(
-              width: MediaQuery.of(context).size.width,
-              height: MediaQuery.of(context).size.height * 0.35,
-              decoration: const BoxDecoration(
-                image: DecorationImage(
-                  image: AssetImage('assets/images/forgot.png'),
-                  fit: BoxFit.contain,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // 插图
+              Container(
+                width: MediaQuery.of(context).size.width,
+                height: MediaQuery.of(context).size.height * 0.35,
+                decoration: const BoxDecoration(
+                  image: DecorationImage(
+                    image: AssetImage('assets/images/forgot.png'),
+                    fit: BoxFit.contain,
+                  ),
                 ),
               ),
-            ),
 
-            // 登录信息
-            // 动画：从底下升起
-            SlideTransition(
-              position: _slideAnimation,
-              child: Align(
-                alignment: Alignment.bottomCenter,
-                child: ClipRect(
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 3.0, sigmaY: 3.0),
-                    child: Container(
-                      width: MediaQuery.of(context).size.width,
-                      height: MediaQuery.of(context).size.height * 0.6,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.8),
-                        // 上面的左右两个角设置为圆角
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(25),
-                          topRight: Radius.circular(25),
+              // 登录信息
+              // 动画：从底下升起
+              SlideTransition(
+                position: _slideAnimation,
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: ClipRect(
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 3.0, sigmaY: 3.0),
+                      child: Container(
+                        width: MediaQuery.of(context).size.width,
+                        height: MediaQuery.of(context).size.height * 0.6,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.8),
+                          // 上面的左右两个角设置为圆角
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(25),
+                            topRight: Radius.circular(25),
+                          ),
                         ),
-                      ),
-                      child: Column(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            SizedBox(
-                              width: MediaQuery.of(context).size.width * 0.7,
-                              child: Column(children: [
-                                // “登录账号”标题
-                                const Text(
-                                  '重置密码',
-                                  style: TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                    fontFamily: "BalooBhai",
+                        child: Column(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              SizedBox(
+                                width: MediaQuery.of(context).size.width * 0.7,
+                                child: Column(children: [
+                                  // “登录账号”标题
+                                  const Text(
+                                    '重置密码',
+                                    style: TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                      fontFamily: "BalooBhai",
+                                    ),
                                   ),
-                                ),
 
-                                const SizedBox(
-                                  height: 15,
-                                ),
+                                  const SizedBox(
+                                    height: 15,
+                                  ),
 
-                                // 邮箱输入框
-                                SizedBox(
-                                  width:
-                                      MediaQuery.of(context).size.width * 0.7,
-                                  child: Material(
-                                    color: Colors.transparent,
-                                    shadowColor:
-                                        const Color.fromARGB(151, 0, 0, 0),
-                                    elevation: 10,
-                                    child: TextFormField(
-                                      controller: emailController,
-                                      maxLines: 1,
-                                      textAlign: TextAlign.left,
-                                      textAlignVertical:
-                                          TextAlignVertical.center,
-                                      cursorColor: Colors.black38,
-                                      style: const TextStyle(
-                                          color: Colors.black, fontSize: 16),
-                                      decoration: InputDecoration(
-                                        //取消奇怪的高度
-                                        isCollapsed: true,
-                                        contentPadding:
-                                            const EdgeInsets.fromLTRB(
-                                                0, 10, 15, 10),
-                                        counterStyle: const TextStyle(
-                                            color: Colors.black38),
-                                        prefixIcon: Padding(
-                                          padding: const EdgeInsets.fromLTRB(
-                                              20, 0, 0, 0),
-                                          child: Image.asset(
-                                            "assets/icons/email.png",
-                                            width: 16,
-                                            height: 16,
+                                  // 邮箱输入框
+                                  SizedBox(
+                                    width:
+                                        MediaQuery.of(context).size.width * 0.7,
+                                    child: Material(
+                                      color: Colors.transparent,
+                                      shadowColor:
+                                          const Color.fromARGB(151, 0, 0, 0),
+                                      elevation: 10,
+                                      child: TextFormField(
+                                        controller: emailController,
+                                        maxLines: 1,
+                                        textAlign: TextAlign.left,
+                                        textAlignVertical:
+                                            TextAlignVertical.center,
+                                        cursorColor: Colors.black38,
+                                        style: const TextStyle(
+                                            color: Colors.black, fontSize: 16),
+                                        decoration: InputDecoration(
+                                          //取消奇怪的高度
+                                          isCollapsed: true,
+                                          contentPadding:
+                                              const EdgeInsets.fromLTRB(
+                                                  0, 10, 15, 10),
+                                          counterStyle: const TextStyle(
+                                              color: Colors.black38),
+                                          prefixIcon: Padding(
+                                            padding: const EdgeInsets.fromLTRB(
+                                                20, 0, 0, 0),
+                                            child: Image.asset(
+                                              "assets/icons/email.png",
+                                              width: 16,
+                                              height: 16,
+                                            ),
                                           ),
-                                        ),
-                                        prefixIconConstraints:
-                                            const BoxConstraints(minWidth: 60),
-                                        labelText: '邮箱',
-                                        labelStyle: const TextStyle(
-                                          color:
-                                              Color.fromARGB(96, 104, 104, 104),
-                                        ),
-                                        fillColor: Colors.white,
-                                        filled: true,
-                                        enabledBorder: OutlineInputBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(25),
-                                          borderSide: const BorderSide(
-                                            color: Color.fromRGBO(0, 0, 0, 0.2),
-                                          ),
-                                        ),
-                                        focusedBorder: OutlineInputBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(25),
-                                          borderSide: const BorderSide(
+                                          prefixIconConstraints:
+                                              const BoxConstraints(
+                                                  minWidth: 60),
+                                          labelText: '邮箱',
+                                          labelStyle: const TextStyle(
                                             color: Color.fromARGB(
-                                                179, 145, 145, 145),
+                                                96, 104, 104, 104),
+                                          ),
+                                          floatingLabelStyle: const TextStyle(
+                                              color: Colors.black),
+                                          fillColor: Colors.white,
+                                          filled: true,
+                                          enabledBorder: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(25),
+                                            borderSide: const BorderSide(
+                                              color:
+                                                  Color.fromRGBO(0, 0, 0, 0.2),
+                                            ),
+                                          ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(25),
+                                            borderSide: const BorderSide(
+                                              color: Color.fromARGB(
+                                                  179, 145, 145, 145),
+                                            ),
                                           ),
                                         ),
                                       ),
                                     ),
                                   ),
-                                ),
 
-                                const SizedBox(
-                                  height: 15,
-                                ),
+                                  const SizedBox(
+                                    height: 15,
+                                  ),
 
-                                // 密码输入框
-                                SizedBox(
-                                  width:
-                                      MediaQuery.of(context).size.width * 0.7,
-                                  child: Material(
-                                    color: Colors.transparent,
-                                    shadowColor:
-                                        const Color.fromARGB(151, 0, 0, 0),
-                                    elevation: 10,
-                                    child: TextFormField(
-                                      controller: passwordController,
-                                      obscureText: true, //隐藏密码
-                                      maxLines: 1,
-                                      textAlign: TextAlign.left,
-                                      textAlignVertical:
-                                          TextAlignVertical.center,
-                                      cursorColor: Colors.black38,
-                                      style: const TextStyle(
-                                          color: Colors.black, fontSize: 16),
-                                      decoration: InputDecoration(
-                                        //取消奇怪的高度
-                                        isCollapsed: true,
-                                        contentPadding:
-                                            const EdgeInsets.fromLTRB(
-                                                0, 10, 15, 10),
-                                        counterStyle: const TextStyle(
-                                            color: Colors.black38),
-                                        prefixIcon: Padding(
-                                          padding: const EdgeInsets.fromLTRB(
-                                              20, 0, 0, 0),
-                                          child: Image.asset(
-                                            "assets/icons/lock.png",
-                                            width: 16,
-                                            height: 16,
+                                  // 密码输入框
+                                  SizedBox(
+                                    width:
+                                        MediaQuery.of(context).size.width * 0.7,
+                                    child: Material(
+                                      color: Colors.transparent,
+                                      shadowColor:
+                                          const Color.fromARGB(151, 0, 0, 0),
+                                      elevation: 10,
+                                      child: TextFormField(
+                                        controller: passwordController,
+                                        obscureText: true, //隐藏密码
+                                        maxLines: 1,
+                                        textAlign: TextAlign.left,
+                                        textAlignVertical:
+                                            TextAlignVertical.center,
+                                        cursorColor: Colors.black38,
+                                        style: const TextStyle(
+                                            color: Colors.black, fontSize: 16),
+                                        decoration: InputDecoration(
+                                          //取消奇怪的高度
+                                          isCollapsed: true,
+                                          contentPadding:
+                                              const EdgeInsets.fromLTRB(
+                                                  0, 10, 15, 10),
+                                          counterStyle: const TextStyle(
+                                              color: Colors.black38),
+                                          prefixIcon: Padding(
+                                            padding: const EdgeInsets.fromLTRB(
+                                                20, 0, 0, 0),
+                                            child: Image.asset(
+                                              "assets/icons/lock.png",
+                                              width: 16,
+                                              height: 16,
+                                            ),
                                           ),
-                                        ),
-                                        prefixIconConstraints:
-                                            const BoxConstraints(minWidth: 60),
-                                        labelText: '密码',
-                                        labelStyle: const TextStyle(
-                                          color:
-                                              Color.fromARGB(96, 104, 104, 104),
-                                        ),
-                                        fillColor: Colors.white,
-                                        filled: true,
-                                        enabledBorder: OutlineInputBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(25),
-                                          borderSide: const BorderSide(
-                                            color: Color.fromRGBO(0, 0, 0, 0.2),
-                                          ),
-                                        ),
-                                        focusedBorder: OutlineInputBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(25),
-                                          borderSide: const BorderSide(
+                                          prefixIconConstraints:
+                                              const BoxConstraints(
+                                                  minWidth: 60),
+                                          labelText: '密码',
+                                          labelStyle: const TextStyle(
                                             color: Color.fromARGB(
-                                                179, 145, 145, 145),
+                                                96, 104, 104, 104),
+                                          ),
+                                          floatingLabelStyle: const TextStyle(
+                                              color: Colors.black),
+                                          fillColor: Colors.white,
+                                          filled: true,
+                                          enabledBorder: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(25),
+                                            borderSide: const BorderSide(
+                                              color:
+                                                  Color.fromRGBO(0, 0, 0, 0.2),
+                                            ),
+                                          ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(25),
+                                            borderSide: const BorderSide(
+                                              color: Color.fromARGB(
+                                                  179, 145, 145, 145),
+                                            ),
                                           ),
                                         ),
                                       ),
                                     ),
                                   ),
-                                ),
 
-                                const SizedBox(
-                                  height: 15,
-                                ),
+                                  const SizedBox(
+                                    height: 15,
+                                  ),
 
-                                // 验证码
-                                Stack(
-                                    alignment: Alignment.centerRight,
-                                    children: <Widget>[
-                                      SizedBox(
-                                        width:
-                                            MediaQuery.of(context).size.width *
-                                                0.75,
-                                        child: Material(
-                                          color: Colors.transparent,
-                                          shadowColor: const Color.fromARGB(
-                                              151, 0, 0, 0),
-                                          elevation: 10,
-                                          child: TextField(
-                                            controller: validCodeController,
-                                            maxLines: 1,
-                                            maxLength: 6,
-                                            textAlign: TextAlign.left,
-                                            textAlignVertical:
-                                                TextAlignVertical.center,
-                                            cursorColor: Colors.black38,
-                                            style: const TextStyle(
-                                                color: Colors.black,
-                                                fontSize: 16),
-                                            decoration: InputDecoration(
-                                              //取消奇怪的高度
-                                              isCollapsed: true,
-                                              counterText: "", // 隐藏“0/4”最大长度
-                                              contentPadding:
-                                                  const EdgeInsets.fromLTRB(
-                                                      0, 10, 15, 10),
-                                              counterStyle: const TextStyle(
-                                                  color: Colors.black38),
-                                              prefixIcon: Padding(
-                                                  padding:
-                                                      const EdgeInsets.fromLTRB(
-                                                          20, 0, 0, 0),
-                                                  child: Image.asset(
-                                                      "assets/icons/otp.png",
-                                                      width: 22,
-                                                      height: 22)),
-                                              prefixIconConstraints:
-                                                  const BoxConstraints(
-                                                      minWidth: 60),
-                                              labelText: '验证码',
-                                              labelStyle: const TextStyle(
-                                                color: Color.fromARGB(
-                                                    96, 104, 104, 104),
-                                              ),
-                                              fillColor: const Color.fromARGB(
-                                                  187, 250, 250, 250),
-                                              filled: true,
-                                              enabledBorder: OutlineInputBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(25),
-                                                borderSide: const BorderSide(
-                                                    color: Color.fromRGBO(
-                                                        0, 0, 0, 0.2)),
-                                              ),
-                                              focusedBorder: OutlineInputBorder(
+                                  // 验证码
+                                  Stack(
+                                      alignment: Alignment.centerRight,
+                                      children: <Widget>[
+                                        SizedBox(
+                                          width: MediaQuery.of(context)
+                                                  .size
+                                                  .width *
+                                              0.75,
+                                          child: Material(
+                                            color: Colors.transparent,
+                                            shadowColor: const Color.fromARGB(
+                                                151, 0, 0, 0),
+                                            elevation: 10,
+                                            child: TextField(
+                                              controller: validCodeController,
+                                              maxLines: 1,
+                                              maxLength: 6,
+                                              textAlign: TextAlign.left,
+                                              textAlignVertical:
+                                                  TextAlignVertical.center,
+                                              cursorColor: Colors.black38,
+                                              style: const TextStyle(
+                                                  color: Colors.black,
+                                                  fontSize: 16),
+                                              decoration: InputDecoration(
+                                                //取消奇怪的高度
+                                                isCollapsed: true,
+                                                counterText: "", // 隐藏“0/4”最大长度
+                                                contentPadding:
+                                                    const EdgeInsets.fromLTRB(
+                                                        0, 10, 15, 10),
+                                                counterStyle: const TextStyle(
+                                                    color: Colors.black38),
+                                                prefixIcon: Padding(
+                                                    padding: const EdgeInsets
+                                                        .fromLTRB(20, 0, 0, 0),
+                                                    child: Image.asset(
+                                                        "assets/icons/otp.png",
+                                                        width: 22,
+                                                        height: 22)),
+                                                prefixIconConstraints:
+                                                    const BoxConstraints(
+                                                        minWidth: 60),
+                                                labelText: '验证码',
+                                                labelStyle: const TextStyle(
+                                                  color: Color.fromARGB(
+                                                      96, 104, 104, 104),
+                                                ),
+                                                floatingLabelStyle:
+                                                    const TextStyle(
+                                                        color: Colors.black),
+                                                fillColor: Colors.white,
+                                                filled: true,
+                                                enabledBorder:
+                                                    OutlineInputBorder(
                                                   borderRadius:
                                                       BorderRadius.circular(25),
                                                   borderSide: const BorderSide(
-                                                      color: Color.fromARGB(
-                                                          179, 145, 145, 145))),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      // 获取验证码按钮
-
-                                      Container(
-                                        height: 25,
-                                        child: Padding(
-                                          padding: const EdgeInsets.fromLTRB(
-                                              0, 0, 10, 0),
-                                          child: FilledButton(
-                                            onPressed: () async {
-                                              await getValidCode();
-                                            },
-                                            style: FilledButton.styleFrom(
-                                              backgroundColor:
-                                                  const Color.fromRGBO(
-                                                      219, 219, 219, 1),
-                                              textStyle: const TextStyle(
-                                                fontSize: 12.0,
-                                                fontFamily: 'Blinker',
+                                                      color: Color.fromRGBO(
+                                                          0, 0, 0, 0.2)),
+                                                ),
+                                                focusedBorder:
+                                                    OutlineInputBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(25),
+                                                  borderSide: const BorderSide(
+                                                    color: Color.fromARGB(
+                                                        179, 145, 145, 145),
+                                                  ),
+                                                ),
                                               ),
                                             ),
-                                            child: const Text(
-                                              "获取验证码",
-                                              style: TextStyle(
+                                          ),
+                                        ),
+                                        // 获取验证码按钮
+
+                                        SizedBox(
+                                          height: 25,
+                                          child: Padding(
+                                            padding: const EdgeInsets.fromLTRB(
+                                                0, 0, 10, 0),
+                                            child: FilledButton(
+                                              onPressed: () async {
+                                                await getValidCode();
+                                              },
+                                              style: FilledButton.styleFrom(
+                                                backgroundColor:
+                                                    const Color.fromRGBO(
+                                                        219, 219, 219, 1),
+                                                textStyle: const TextStyle(
+                                                  fontSize: 13.0,
+                                                  fontFamily: 'Blinker',
+                                                ),
+                                              ),
+                                              child: const Text(
+                                                "获取验证码",
+                                                style: TextStyle(
                                                   color: Color.fromARGB(
-                                                      167, 0, 0, 0)),
+                                                      167, 0, 0, 0),
+                                                ),
+                                              ),
                                             ),
                                           ),
                                         ),
-                                      ),
-                                    ]),
-
-                                const SizedBox(
-                                  height: 15,
-                                ),
-
-                                //注册按钮
-                                Container(
-                                  decoration: const BoxDecoration(
-                                      borderRadius: BorderRadius.all(
-                                        Radius.circular(25.0),
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Color.fromARGB(
-                                              146, 155, 155, 155),
-                                          spreadRadius: 0.4,
-                                          blurRadius: 5,
-                                          offset: Offset(0, 4),
-                                        )
                                       ]),
-                                  child: SizedBox(
-                                    width:
-                                        MediaQuery.of(context).size.width * 0.7,
-                                    child: FilledButton(
-                                      onPressed: () async {
-                                        // 等待登录
-                                        await resetPassword();
-                                      },
-                                      style: FilledButton.styleFrom(
-                                        backgroundColor: const Color.fromARGB(
-                                            255, 255, 132, 176),
-                                        textStyle: const TextStyle(
-                                          fontSize: 16.0,
+
+                                  const SizedBox(
+                                    height: 15,
+                                  ),
+
+                                  //注册按钮
+                                  Container(
+                                    decoration: const BoxDecoration(
+                                        borderRadius: BorderRadius.all(
+                                          Radius.circular(25.0),
                                         ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Color.fromARGB(
+                                                146, 155, 155, 155),
+                                            spreadRadius: 0.4,
+                                            blurRadius: 5,
+                                            offset: Offset(0, 4),
+                                          )
+                                        ]),
+                                    child: SizedBox(
+                                      width: MediaQuery.of(context).size.width *
+                                          0.7,
+                                      child: FilledButton(
+                                        onPressed: () async {
+                                          // 等待登录
+                                          await resetPassword();
+                                        },
+                                        style: FilledButton.styleFrom(
+                                          backgroundColor: const Color.fromARGB(
+                                              255, 255, 132, 176),
+                                          textStyle: const TextStyle(
+                                            fontSize: 16.0,
+                                          ),
+                                        ),
+                                        child: const Text('重置密码'),
                                       ),
-                                      child: const Text('重置密码'),
                                     ),
                                   ),
-                                ),
-                              ]),
-                            ),
+                                ]),
+                              ),
 
-                            // 没有账号？点此注册
-                            SizedBox(
-                                width: MediaQuery.of(context).size.width * 0.7,
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    const Text(
-                                      "已有账号？",
-                                      style: TextStyle(
-                                        color: Color.fromARGB(255, 0, 0, 0),
-                                        fontSize: 14,
-                                        fontFamily: "BalooBhai",
-                                      ),
-                                    ),
-                                    GestureDetector(
-                                      onTap: () {
-                                        print("点此登录");
-                                        Navigator.pop(context);
-                                      },
-                                      child: const Text(
-                                        "点此登录",
+                              // 没有账号？点此注册
+                              SizedBox(
+                                  width:
+                                      MediaQuery.of(context).size.width * 0.7,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      const Text(
+                                        "已有账号？",
                                         style: TextStyle(
-                                          color:
-                                              Color.fromARGB(255, 28, 3, 116),
+                                          color: Color.fromARGB(255, 0, 0, 0),
                                           fontSize: 14,
                                           fontFamily: "BalooBhai",
                                         ),
                                       ),
-                                    )
-                                  ],
-                                ))
-                          ]),
+                                      GestureDetector(
+                                        onTap: () {
+                                          Navigator.pop(context);
+                                        },
+                                        child: const Text(
+                                          "点此登录",
+                                          style: TextStyle(
+                                            color:
+                                                Color.fromARGB(255, 28, 3, 116),
+                                            fontSize: 14,
+                                            fontFamily: "BalooBhai",
+                                          ),
+                                        ),
+                                      )
+                                    ],
+                                  ))
+                            ]),
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

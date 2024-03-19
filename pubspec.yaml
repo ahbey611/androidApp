@@ -39,6 +39,9 @@ dependencies:
   loading_animation_widget: ^1.2.0+4
   flutter_secure_storage: ^9.0.0
   shared_preferences: ^2.2.2
+  stomp_dart_client: ^1.0.3
+  http: ^1.2.0
+  avoid_keyboard: ^0.3.0
 
 dev_dependencies:
   flutter_test:
@@ -94,5 +97,24 @@ flutter:
   #       - asset: fonts/TrajanPro_Bold.ttf
   #         weight: 700
   #
+  fonts:
+    - family: BalooBhai
+      fonts:
+        - asset: assets/fonts/BalooBhai.ttf
+    - family: Blinker
+      fonts:
+        - asset: assets/fonts/Blinker-Regular.ttf
+    - family: Zcool1
+      fonts:
+        - asset: assets/fonts/ZCOOLQingKeHuangYou-Regular.ttf
+    - family: Zcool2
+      fonts:
+        - asset: assets/fonts/ZCOOLKuaiLe-Regular.ttf
+    - family: rifu
+      fonts:
+        - asset: assets/fonts/AaRiFuYiRiKeAiYuan-2.ttf
+    - family: inter
+      fonts:
+        - asset: assets/fonts/Inter-VariableFont_slnt,wght.ttf
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages

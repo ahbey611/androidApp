@@ -1,16 +1,25 @@
 import 'package:flutter/material.dart';
 import '../account/login.dart';
 import '../account/welcome.dart';
-import '../homePages/home.dart';
 import '../account/register.dart';
 import '../account/resetPassword.dart';
 
+import '../component/footer.dart';
+import '../homePages/home/home.dart';
+import '../homePages/chat/chat.dart';
+import '../homePages/post/post.dart';
+import '../homePages/user/user.dart';
+
 Map routes = {
   '/': (context) => const WelcomePage(),
+  '/mainPages': (context, {arguments}) => MainPages(arguments: arguments),
   '/login': (context) => const LoginPage(),
-  '/home': (context) => const Home(),
   '/register': (context) => const RegisterPage(),
   '/resetPassword': (context) => const ResetPasswordPage(),
+  '/home': (context) => const HomePage(),
+  '/chat': (context) => const ChatPage(),
+  '/post': (context) => const PostPage(),
+  '/user': (context) => const UserPage(),
 };
 
 var onGenerateRoute = (RouteSettings settings) {
