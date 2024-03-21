@@ -100,7 +100,7 @@ class _MainPagesState extends State<MainPages> {
           BottomNavigationBarItem(
               icon: Padding(
                   padding: const EdgeInsets.fromLTRB(0, 0, 0, 2),
-                  child: _currentIndex == 4
+                  child: _currentIndex == 3
                       ? getIcon("user1.png")
                       : getIcon("user0.png")),
               label: "我的"),
