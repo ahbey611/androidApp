@@ -1,118 +1,6 @@
-/* import 'package:flutter/material.dart';
-
-class WidgetA extends StatefulWidget {
-  const WidgetA({super.key});
-
-  @override
-  State<WidgetA> createState() => _WidgetAState();
-}
-
-class _WidgetAState extends State<WidgetA> {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 100,
-      height: 200,
-      color: Colors.red,
-    );
-  }
-}
-
-class WidgetB extends StatefulWidget {
-  const WidgetB({super.key});
-
-  @override
-  State<WidgetB> createState() => _WidgetBState();
-}
-
-class _WidgetBState extends State<WidgetB> {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 100,
-      height: 200,
-      color: Colors.yellow,
-    );
-  }
-}
-
-class Button extends StatefulWidget {
-  const Button({super.key});
-
-  @override
-  State<Button> createState() => _ButtonState();
-}
-
-class _ButtonState extends State<Button> {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      child: ElevatedButton(
-        onPressed: () {},
-        child: Text('Button'),
-      ),
-    );
-  }
-}
-
-class Test extends StatefulWidget {
-  const Test({super.key});
-
-  @override
-  State<Test> createState() => _TestState();
-}
-
-class _TestState extends State<Test> {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      child: Column(
-        children: [
-          WidgetA(),
-          WidgetB(),
-          Button(),
-        ],
-      ),
-    );
-  }
-}
- */
-
-import 'dart:async';
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:dio/dio.dart';
-import 'package:stomp_dart_client/parser.dart';
-import 'package:stomp_dart_client/sock_js/sock_js_parser.dart';
-import 'package:stomp_dart_client/sock_js/sock_js_utils.dart';
-import 'package:stomp_dart_client/stomp.dart';
-import 'package:stomp_dart_client/stomp_config.dart';
-import 'package:stomp_dart_client/stomp_exception.dart';
-import 'package:stomp_dart_client/stomp_frame.dart';
-import 'package:stomp_dart_client/stomp_handler.dart';
-import 'package:stomp_dart_client/stomp_parser.dart';
-
-import '../../account/token.dart';
-import '../../api/api.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../component/header.dart';
-import '../../component/footer.dart';
-import '../../router/router.dart';
-
-String? token = '';
-int id = -1;
-
-class Message {
-  final int senderId;
-  final int receiverId;
-  final String content;
-
-  Message(
-      {required this.senderId,
-      required this.receiverId,
-      required this.content});
-}
 
 class ChatPage extends StatefulWidget {
   const ChatPage({super.key});
@@ -122,208 +10,223 @@ class ChatPage extends StatefulWidget {
 }
 
 class _ChatPageState extends State<ChatPage> {
-  // 从后端请求得到的原始数据
-  List<dynamic> data = [];
-  String greeting = '';
-  final TextEditingController receiverController = TextEditingController();
-  final TextEditingController contentController = TextEditingController();
-  late StompClient stompClient;
-  // 定义消息列表
-  List<Message> messages = [];
-  bool refresh = true;
+  double phoneWidth = 0.0;
+  double phoneHeight = 0.0;
 
-  void onConnected(StompFrame frame) {
-    print('Connected');
-    stompClient.subscribe(
-      destination: '/topic/$id',
-      // callback: (frame) {
-      //   Map<String, dynamic>? result = json.decode(frame.body!);
-      //   print(result);
-      // },
-      callback: (frame) {
-        var result = json.decode(frame.body!);
-        setState(() {
-          messages.add(Message(
-            senderId: int.parse(result['sender']),
-            receiverId: id,
-            content: result['content'],
-          ));
-        });
-      },
-    );
+  // 检查并裁剪文本的函数
+  String checkAndFormatMessage(
+      String message, double maxWidth, TextStyle style) {
+    TextPainter textPainter = TextPainter(
+      text: TextSpan(text: message, style: style),
+      maxLines: 1,
+      textDirection: TextDirection.ltr,
+    )..layout(maxWidth: maxWidth);
 
-    stompClient.send(
-      destination: '/app/chat.addUser',
-      body: json.encode({
-        'content': 'Hello',
-        'receiver': 'Server',
-        'sender': id.toString(),
-        'type': 'JOIN'
-      }),
-    );
-  }
+    if (textPainter.didExceedMaxLines) {
+      // 如果文本超出了最大行数，需要裁剪
+      for (int i = message.length; i > 0; i--) {
+        String testString = '${message.substring(0, i)}...';
+        textPainter.text = TextSpan(text: testString, style: style);
+        textPainter.layout(maxWidth: maxWidth);
 
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  // 测试接口
-  Future<void> testAPI() async {
-    if (!refresh) return;
-
-    // var token = await storage.read(key: 'token');
-
-    final dio = Dio();
-    Response response;
-    dio.options.headers["Authorization"] = "Bearer $token";
-    try {
-      response = await dio.get(
-        "$ip/api/test/hello-world",
-        // queryParameters: params,
-      );
-      if (response.data["code"] == 200) {
-        greeting = response.data["data"];
-      } else {
-        greeting = '';
+        if (!textPainter.didExceedMaxLines) {
+          // 找到不超出最大宽度的裁剪位置
+          return testString;
+        }
       }
-    } catch (e) {
-      greeting = '';
     }
-    print(greeting);
+
+    return message; // 文本没有超出最大宽度
   }
 
-  // 获取用户本人id
-  Future<void> getId() async {
-    if (!refresh) return;
-
-    token = await storage.read(key: 'token');
-    print(token);
-
-    final dio = Dio();
-    Response response;
-    dio.options.headers["Authorization"] = "Bearer $token";
-    try {
-      response = await dio.post("$ip/api/auth/getId");
-      print(response.data);
-
-      if (response.data['code'] == 200) {
-        print("获取id成功${response.data["data"]}");
-        await storage.write(key: "id", value: response.data["data"].toString());
-        id = response.data["data"];
-        // 保存token
-      }
-    } on DioException catch (error) {
-      //
-    }
+  String formatMessage(String message, int maxLength) {
+    // 如果消息长度超过最大长度，则裁剪并添加...
+    return message.length > maxLength
+        ? '${message.substring(0, maxLength)}...'
+        : message;
   }
 
-  void sendMessage(int receiver, String content) {
-    stompClient.send(
-      destination: '/app/chat.sendMessage',
-      body: json.encode({
-        'content': content,
-        'receiver': receiver.toString(),
-        'sender': id.toString(),
-        'type': 'CHAT'
-      }),
+  // 聊天消息组件
+  Widget chatMessage(int id, String profile, String nickname, String message,
+      String time, bool seen) {
+    String formattedNickname = checkAndFormatMessage(
+        nickname,
+        phoneWidth * 0.9 - 56 - 10 - 60,
+        const TextStyle(fontSize: 18, fontWeight: FontWeight.w900));
+
+    String formattedMessage = checkAndFormatMessage(message,
+        phoneWidth * 0.9 - 56 - 15 - 10 - 15, const TextStyle(fontSize: 15));
+
+    return Column(
+      children: [
+        Padding(
+          padding:
+              EdgeInsets.fromLTRB(phoneWidth * 0.05, 10, phoneWidth * 0.05, 10),
+          child: SizedBox(
+            width: phoneWidth * 0.9,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(0, 0, 15, 0),
+                  child: Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        width: 0.5,
+                        color: const Color.fromARGB(200, 196, 196, 196),
+                      ),
+                    ),
+                    child: CircleAvatar(
+                      radius: 28,
+                      backgroundImage:
+                          // NetworkImage("$ip/static/1710922010469n1.jpg"),
+                          // TODO: 从服务器获取头像
+                          // NetworkImage(profile),
+                          // Image(image: CachedNetworkImageProvider(url)),
+                          CachedNetworkImageProvider(profile),
+                      backgroundColor: Colors.transparent,
+                    ),
+                    //Image(image: CachedNetworkImageProvider(url))
+                    // child: CachedNetworkImage(
+                    //   imageUrl: profile,
+                    //   placeholder: (context, url) =>
+                    //       CircularProgressIndicator(),
+                    //   errorWidget: (context, url, error) => Icon(Icons.error),
+                    // ),
+                  ),
+                ),
+                //
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pushNamed(context, '/chatRoom', arguments: {
+                      'accountId': id,
+                      'nickname': nickname,
+                      'profile': profile,
+                    });
+                  },
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: phoneWidth * 0.9 - 56 - 15 - 10,
+                        // color: Colors.yellow[100],
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            // 昵称
+                            Text(
+                              formattedNickname,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            // 时间
+                            Text(
+                              time,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // 未读消息
+                          if (!seen)
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(0, 0, 5, 0),
+                              child: Container(
+                                width: 8,
+                                height: 8,
+                                decoration: const BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.red,
+                                ),
+                                alignment: Alignment.center,
+                              ),
+                            ),
+
+                          // 已读消息
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(0, 3, 0, 0),
+                            child: Text(
+                              formattedMessage,
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w400,
+                                color: Color.fromARGB(255, 83, 83, 83),
+                              ),
+                              textAlign: TextAlign.left,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // 分割线
+        Padding(
+          padding:
+              EdgeInsets.fromLTRB(phoneWidth * 0.05, 0, phoneWidth * 0.05, 0),
+          child: Container(
+            width: phoneWidth * 0.9,
+            height: 1,
+            color: const Color.fromARGB(255, 217, 217, 218),
+          ),
+        ),
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    // 首页。
-    return FutureBuilder(
-      future: Future.wait([testAPI(), getId()]),
-      // future: testAPI(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.done) {
-          if (refresh) {
-            stompClient = StompClient(
-              config: StompConfig(
-                // url: 'ws://60.205.143.180:8080/gs-guide-websocket',
-                url: 'ws://$rawIp/ws',
-                // url: 'ws://localhost:8080/ws',
-                onConnect: onConnected,
-                beforeConnect: () async {
-                  print('waiting to connect...');
-                  await Future.delayed(const Duration(milliseconds: 200));
-                  print('connecting...');
-                },
-                onWebSocketError: (dynamic error) => print(error.toString()),
-                stompConnectHeaders: {'Authorization': 'Bearer $token'},
-                webSocketConnectHeaders: {'Authorization': 'Bearer $token'},
-              ),
-            );
-
-            stompClient.activate();
-          }
-
-          refresh = false;
-
-          return Scaffold(
-            /* appBar: AppBar(
-              automaticallyImplyLeading: false,
-              title: const Text('Welcome'),
-            ), */
-            appBar: getAppBar(false, "首页"),
-            body: Center(
-              child: Column(
-                children: <Widget>[
-                  Text('首页'),
-                  Text(greeting),
-                  TextFormField(
-                    controller: receiverController,
-                    decoration: const InputDecoration(
-                      labelText: 'Enter receiver id',
-                    ),
-                  ),
-                  TextFormField(
-                    controller: contentController,
-                    decoration: const InputDecoration(
-                      labelText: 'Enter content',
-                    ),
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      // 发送消息给后端
-                      /* stompClient.send(
-                        destination: '/app/chat.sendMessage',
-                        body: json.encode({
-                          'content': 'Hello hahahaha',
-                          'receiver': 'hahaha',
-                          'sender': id.toString(),
-                          'type': 'CHAT'
-                        }),
-                      ); */
-                      sendMessage(int.parse(receiverController.text),
-                          contentController.text);
-                    },
-                    child: const Text('send'),
-                  ),
-                  ElevatedButton(onPressed: getId, child: const Text('getId')),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: messages.length,
-                      itemBuilder: (context, index) {
-                        return ListTile(
-                          title: Text(messages[index].content),
-                          subtitle: Text(
-                              'From: ${messages[index].senderId} To: ${messages[index].receiverId}'),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        } else {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
-        }
-      },
+    phoneWidth = MediaQuery.of(context).size.width;
+    phoneHeight = MediaQuery.of(context).size.height;
+    return Scaffold(
+      appBar: getAppBar(false, "消息"),
+      body: Container(
+        color: Colors.white,
+        child: ListView(
+          children: [
+            chatMessage(
+                0,
+                "https://icons.iconarchive.com/icons/iconarchive/incognito-animals/128/Dog-Avatar-icon.png",
+                "小叮当是否能看见父亲和恢复上课我",
+                "你好啊！你现在有空吗？如果没空那就算了",
+                "14:43",
+                false),
+            chatMessage(
+                1,
+                "https://img1.baidu.com/it/u=1238562453,1377190889&fm=253&fmt=auto?w=130&h=170",
+                "清华的某人haha who are you?",
+                "hello world,are you busy now? I have something to tell you.",
+                "03-14",
+                true),
+            chatMessage(
+                2,
+                "https://wx3.sinaimg.cn/thumb150/005ISZuoly1fwpav2asjzj30qo140dk3.jpg",
+                "abcdehwjwefkjwefkwefqweqwdwq",
+                "hello world,are you busy now? I have something to tell you.",
+                "03-02",
+                false),
+          ],
+        ),
+      ),
     );
   }
 }

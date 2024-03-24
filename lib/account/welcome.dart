@@ -5,7 +5,7 @@ import '../account/token.dart';
 import '../api/api.dart';
 
 class WelcomePage extends StatefulWidget {
-  const WelcomePage({super.key});
+  const WelcomePage({Key? key}) : super(key: key);
 
   @override
   State<WelcomePage> createState() => _WelcomePageState();
@@ -17,6 +17,7 @@ class _WelcomePageState extends State<WelcomePage> {
 
   @override
   void initState() {
+    debugPrint("WelcomePage init");
     super.initState();
     // 自动登录
     loginWithTimeout();
@@ -55,6 +56,8 @@ class _WelcomePageState extends State<WelcomePage> {
       if (context.mounted) Navigator.pushNamed(context, '/login');
       return;
     }
+
+    debugPrint("login token");
 
     const Duration timeout = Duration(seconds: 4);
 

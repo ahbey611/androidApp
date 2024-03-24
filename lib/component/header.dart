@@ -10,7 +10,7 @@ PreferredSizeWidget getAppBar(bool backButton, String title,
       title,
       style: const TextStyle(
         fontFamily: 'inter',
-        fontSize: 23,
+        fontSize: 21,
         fontWeight: FontWeight.bold,
         color: Colors.black,
       ),

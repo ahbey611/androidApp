@@ -160,7 +160,7 @@ class _RegisterPageState extends State<RegisterPage>
   Future<void> getValidCode() async {
     final String email = emailController.text;
     final String emailGetValidCodeApi =
-        "http://60.205.143.180:8080/api/auth/ask-code?email=${email}&type=register";
+        "$ip/api/auth/ask-code?email=${email}&type=register";
 
     Response response;
     response = await dio.get(emailGetValidCodeApi);

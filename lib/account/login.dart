@@ -2,7 +2,6 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 
 import './token.dart';
@@ -35,6 +34,7 @@ class _LoginPageState extends State<LoginPage>
   @override
   void initState() {
     super.initState();
+    debugPrint("LoginPage init");
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
