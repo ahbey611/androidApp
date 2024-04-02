@@ -42,5 +42,26 @@ https://juejin.cn/post/7076083351668555813
      ),
    );
    ```
+
+2. 获取当前路由路径 <br>
+    https://stackoverflow.com/questions/46483949/how-to-get-current-route-path-in-flutter
+    ``` dart
+    ModalRoute.of(context).settings.name
+    ```
+
+    上面的代码可能会出现值为null，所以需设置settings参数
+    https://github.com/flutter/flutter/issues/50192#issuecomment-590307455
+    ``` dart
+    Route<dynamic> generateRoute(RouteSettings settings) {
+    return MaterialPageRoute(
+      settings: settings, // 这行
+      builder: (BuildContext context) {
+          //some custom code
+          return _data[settings.name](context);
+        }
+      );
+    }
+    ```
+
    
    

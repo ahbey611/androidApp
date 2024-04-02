@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:dio/dio.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 import '../../component/header.dart';
+import '../../account/token.dart';
+import '../../api/api.dart';
+import '../../component/function.dart';
+import '../../router/router.dart';
+import '../../component/webSocket.dart';
 
 class ChatPage extends StatefulWidget {
   const ChatPage({super.key});
@@ -12,6 +19,87 @@ class ChatPage extends StatefulWidget {
 class _ChatPageState extends State<ChatPage> {
   double phoneWidth = 0.0;
   double phoneHeight = 0.0;
+  List<dynamic> chatUserData = [];
+
+  @override
+  void initState() {
+    super.initState();
+    getChatList().then((_) {
+      getChatUsersWidgetList();
+    });
+  }
+
+  // 获取聊天对象列表
+  Future<void> getChatList() async {
+    debugPrint("getChatList()函数被调用");
+    var token = await storage.read(key: 'token');
+
+    //从后端获取数据
+    final dio = Dio();
+    Response response;
+    dio.options.headers["Authorization"] = "Bearer $token";
+
+    try {
+      response = await dio.get(
+        "$ip/api/chat/all-users",
+      );
+      if (response.data["code"] == 200) {
+        chatUserData = response.data["data"];
+      } else {
+        chatUserData = [];
+      }
+    } catch (e) {
+      chatUserData = [];
+    }
+    debugPrint(chatUserData.toString());
+    getChatUsersList();
+  }
+
+  // 将获取到的聊天对象列表转换为ChatUsers对象
+  void getChatUsersList() {
+    chatUsersList = [];
+    for (var chatUser in chatUserData) {
+      String content = chatUser['content'] ?? '';
+      if (chatUser['type'] == 1) {
+        content = '[图片]';
+      }
+      chatUsersList.add(ChatUser(
+        id: chatUser['accountId'],
+        nickname: chatUser['nickname'],
+        profile: "$ip/static/${chatUser['profile']}",
+        type: chatUser['type'],
+        content: content,
+        dateTime: extractDateTime(chatUser['updateTime']),
+        status: chatUser['status'],
+      ));
+    }
+    chatUsersStreamController.sink.add(chatUsersList);
+  }
+
+  // 将ChatUsers对象转换为聊天对象列表的组件
+  void getChatUsersWidgetList() {
+    chatUsersWidgetList = [];
+    for (var chatUser in chatUsersList) {
+      chatUsersWidgetList.add(chatMessage(
+          chatUser.id,
+          chatUser.profile,
+          chatUser.nickname,
+          chatUser.content,
+          chatUser.dateTime,
+          chatUser.status));
+    }
+  }
+
+  // 更新最新消息状态(已读)
+  void updateLatestMessageStatus(int id) {
+    for (var chatUser in chatUsersList) {
+      if (chatUser.id == id) {
+        chatUser.status = 1;
+        break;
+      }
+    }
+    chatUsersStreamController.sink.add(chatUsersList);
+  }
 
   // 检查并裁剪文本的函数
   String checkAndFormatMessage(
@@ -39,16 +127,9 @@ class _ChatPageState extends State<ChatPage> {
     return message; // 文本没有超出最大宽度
   }
 
-  String formatMessage(String message, int maxLength) {
-    // 如果消息长度超过最大长度，则裁剪并添加...
-    return message.length > maxLength
-        ? '${message.substring(0, maxLength)}...'
-        : message;
-  }
-
   // 聊天消息组件
   Widget chatMessage(int id, String profile, String nickname, String message,
-      String time, bool seen) {
+      String time, int seen) {
     String formattedNickname = checkAndFormatMessage(
         nickname,
         phoneWidth * 0.9 - 56 - 10 - 60,
@@ -62,53 +143,52 @@ class _ChatPageState extends State<ChatPage> {
         Padding(
           padding:
               EdgeInsets.fromLTRB(phoneWidth * 0.05, 10, phoneWidth * 0.05, 10),
-          child: SizedBox(
-            width: phoneWidth * 0.9,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(0, 0, 15, 0),
-                  child: Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        width: 0.5,
-                        color: const Color.fromARGB(200, 196, 196, 196),
+          child: GestureDetector(
+            onTap: () {
+              Navigator.pushNamed(context, '/chatRoom', arguments: {
+                'accountId': id,
+                'nickname': nickname,
+                'profile': profile,
+              }).then((value) {
+                // _chatListFuture = getChatList(); // Future
+
+                setState(() {
+                  updateLatestMessageStatus(id); // 更新最新消息状态(已读)
+                  routePath = "/chat";
+                  // debugPrint("刷新聊天列表");
+                  // debugPrint("--------");
+                });
+              });
+            },
+            child: Container(
+              width: phoneWidth * 0.9,
+              color: Colors.white,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // 头像
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(0, 0, 15, 0),
+                    child: Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          width: 0.5,
+                          color: const Color.fromARGB(200, 196, 196, 196),
+                        ),
+                      ),
+                      child: CircleAvatar(
+                        radius: 28,
+                        backgroundImage: CachedNetworkImageProvider(profile),
+                        backgroundColor: Colors.transparent,
                       ),
                     ),
-                    child: CircleAvatar(
-                      radius: 28,
-                      backgroundImage:
-                          // NetworkImage("$ip/static/1710922010469n1.jpg"),
-                          // TODO: 从服务器获取头像
-                          // NetworkImage(profile),
-                          // Image(image: CachedNetworkImageProvider(url)),
-                          CachedNetworkImageProvider(profile),
-                      backgroundColor: Colors.transparent,
-                    ),
-                    //Image(image: CachedNetworkImageProvider(url))
-                    // child: CachedNetworkImage(
-                    //   imageUrl: profile,
-                    //   placeholder: (context, url) =>
-                    //       CircularProgressIndicator(),
-                    //   errorWidget: (context, url, error) => Icon(Icons.error),
-                    // ),
                   ),
-                ),
-                //
-                GestureDetector(
-                  onTap: () {
-                    Navigator.pushNamed(context, '/chatRoom', arguments: {
-                      'accountId': id,
-                      'nickname': nickname,
-                      'profile': profile,
-                    });
-                  },
-                  child: Column(
+                  // 昵称和消息
+                  Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -142,7 +222,7 @@ class _ChatPageState extends State<ChatPage> {
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           // 未读消息
-                          if (!seen)
+                          if (seen == 0)
                             Padding(
                               padding: const EdgeInsets.fromLTRB(0, 0, 5, 0),
                               child: Container(
@@ -173,8 +253,8 @@ class _ChatPageState extends State<ChatPage> {
                       ),
                     ],
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -197,36 +277,34 @@ class _ChatPageState extends State<ChatPage> {
   Widget build(BuildContext context) {
     phoneWidth = MediaQuery.of(context).size.width;
     phoneHeight = MediaQuery.of(context).size.height;
+
+    String currentRoute = routePath;
+
+    debugPrint('当前路由路径为: $currentRoute');
+    debugPrint("/chat 页面刷新");
+
     return Scaffold(
       appBar: getAppBar(false, "消息"),
-      body: Container(
-        color: Colors.white,
-        child: ListView(
-          children: [
-            chatMessage(
-                0,
-                "https://icons.iconarchive.com/icons/iconarchive/incognito-animals/128/Dog-Avatar-icon.png",
-                "小叮当是否能看见父亲和恢复上课我",
-                "你好啊！你现在有空吗？如果没空那就算了",
-                "14:43",
-                false),
-            chatMessage(
-                1,
-                "https://img1.baidu.com/it/u=1238562453,1377190889&fm=253&fmt=auto?w=130&h=170",
-                "清华的某人haha who are you?",
-                "hello world,are you busy now? I have something to tell you.",
-                "03-14",
-                true),
-            chatMessage(
-                2,
-                "https://wx3.sinaimg.cn/thumb150/005ISZuoly1fwpav2asjzj30qo140dk3.jpg",
-                "abcdehwjwefkjwefkwefqweqwdwq",
-                "hello world,are you busy now? I have something to tell you.",
-                "03-02",
-                false),
-          ],
-        ),
-      ),
+      body: StreamBuilder<List<ChatUser>>(
+          stream: chatUsersStreamController.stream,
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return Center(
+                child: LoadingAnimationWidget.staggeredDotsWave(
+                    color: Colors.pink, size: 25),
+              );
+            }
+
+            chatUsersList = snapshot.data!;
+            getChatUsersWidgetList();
+
+            return Container(
+              color: Colors.white,
+              child: ListView(
+                children: [...chatUsersWidgetList],
+              ),
+            );
+          }),
     );
   }
 }

@@ -1,6 +1,18 @@
+import 'dart:io';
+
+import 'package:dio/dio.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/services.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:photo_view/photo_view.dart';
+
+import '../../account/token.dart';
+import '../../api/api.dart';
+import '../../component/webSocket.dart';
+import '../../router/router.dart';
+import '../../component/webSocket.dart';
 
 class ChatRoom extends StatefulWidget {
   final Map arguments;
@@ -23,6 +35,12 @@ class _ChatRoomState extends State<ChatRoom> {
   double keyboardHeight = 0.0;
   double chatMessageTextFieldBottomPadding = 20;
   TextEditingController messageController = TextEditingController();
+  List<dynamic> chatRecordList = [];
+  List<Widget> chatRecordWidgetList = [];
+
+  XFile? image;
+  String imagePath = "";
+  String imageUrl = "";
 
   // 消息输入框聚焦节点
   final FocusNode _focusNode = FocusNode();
@@ -48,14 +66,21 @@ class _ChatRoomState extends State<ChatRoom> {
     _focusNode.addListener(_onFocusChange);
 
     // 让ListView在第一次构建后滚动到底部
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent + phoneHeight,
-          duration: const Duration(milliseconds: 500),
-          curve: Curves.easeOut,
-        );
-      }
+    getChatRecord().then((_) {
+      setState(() {
+        // 更新界面以显示新获取的聊天记录
+        getChatRecordWidgetList();
+        getChatRecordMessageWidgetList();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_scrollController.hasClients) {
+            _scrollController.animateTo(
+              _scrollController.position.maxScrollExtent + phoneHeight,
+              duration: const Duration(milliseconds: 500),
+              curve: Curves.easeOut,
+            );
+          }
+        });
+      });
     });
   }
 
@@ -72,12 +97,13 @@ class _ChatRoomState extends State<ChatRoom> {
     setState(() {
       isFocused = _focusNode.hasFocus;
       if (isFocused) {
+        // debugPrint("输入框聚焦");
         chatMessageTextFieldBottomPadding = 0;
         Future.delayed(const Duration(milliseconds: 300)).then((_) {
           setState(() {
             if (_scrollController.hasClients) {
               _scrollController.animateTo(
-                _scrollController.position.maxScrollExtent + 200,
+                _scrollController.position.maxScrollExtent + phoneHeight,
                 duration: const Duration(milliseconds: 200),
                 curve: Curves.easeOut,
               );
@@ -85,15 +111,19 @@ class _ChatRoomState extends State<ChatRoom> {
           });
         });
       } else {
-        chatMessageTextFieldBottomPadding = 20;
+        // debugPrint("输入框失焦");
+        // debugPrint(_scrollController.position.toString());
+        chatMessageTextFieldBottomPadding = 0;
         Future.delayed(const Duration(milliseconds: 300)).then((_) {
           setState(() {
             if (_scrollController.hasClients) {
+              // debugPrint("滚动到底部");
               _scrollController.animateTo(
-                _scrollController.position.maxScrollExtent + 200,
+                _scrollController.position.maxScrollExtent + phoneHeight,
                 duration: const Duration(milliseconds: 200),
                 curve: Curves.easeOut,
               );
+              // debugPrint(_scrollController.position.toString());
             }
           });
         });
@@ -101,11 +131,150 @@ class _ChatRoomState extends State<ChatRoom> {
     });
   }
 
+  // 通过WebSocket发送文字消息
+  void sendTextMessage() {
+    String message = messageController.text;
+    if (message.isNotEmpty) {
+      // 发送消息
+      //  type: 'CHAT_TEXT' 为聊天消息
+      wsSendMessage(accountId, message);
+      messageController.clear();
+    }
+  }
+
+  // 获取聊天记录的Widget列表
+  void getChatRecordWidgetList() {
+    chatRecordWidgetList = [];
+    for (var chatRecord in chatRecordList) {
+      String content = chatRecord["content"];
+      int type = chatRecord["type"]; // 0: 文字消息 1: 图片消息
+      int senderId = chatRecord["senderId"];
+      int receiverId = chatRecord["receiverId"];
+      bool isSelf = true;
+      if (senderId == accountId) isSelf = false;
+
+      if (type == 0) {
+        chatRecordWidgetList.add(getTextMessage(isSelf, content));
+      } else if (type == 1) {
+        chatRecordWidgetList.add(getImageMessage(isSelf, content));
+      }
+    }
+  }
+
+  // 把聊天记录转换为Message类列表
+  void getChatRecordMessageList() {
+    chatRecordMessageList = [];
+    for (var chatRecord in chatRecordList) {
+      String content = chatRecord["content"];
+      int type = chatRecord["type"]; // 0: 文字消息 1: 图片消息
+      int senderId = chatRecord["senderId"];
+      int receiverId = chatRecord["receiverId"];
+      bool isSelf = true;
+      if (senderId == accountId) isSelf = false;
+
+      chatRecordMessageList.add(Message(
+        content: content,
+        type: type,
+        isSelf: isSelf,
+      ));
+    }
+    messagesStreamController.sink.add(chatRecordMessageList);
+  }
+
+  // 把Message类列表转换为Widget列表
+  void getChatRecordMessageWidgetList() {
+    chatRecordMessageWidgetList = [];
+    for (var message in chatRecordMessageList) {
+      if (message.type == 0) {
+        chatRecordMessageWidgetList
+            .add(getTextMessage(message.isSelf, message.content));
+      } else if (message.type == 1) {
+        chatRecordMessageWidgetList
+            .add(getImageMessage(message.isSelf, message.content));
+      }
+    }
+  }
+
+  // 获取聊天记录
+  Future<void> getChatRecord() async {
+    chatRecordList = [];
+    var token = await storage.read(key: 'token');
+
+    //从后端获取数据
+    final dio = Dio();
+    Response response;
+    dio.options.headers["Authorization"] = "Bearer $token";
+
+    try {
+      response = await dio.get(
+        "$ip/api/chat/message?receiverId=$accountId",
+      );
+      if (response.data["code"] == 200) {
+        chatRecordList = response.data["data"]["chatMessageList"];
+      } else {
+        chatRecordList = [];
+      }
+    } catch (e) {
+      chatRecordList = [];
+    }
+    debugPrint(chatRecordList.toString());
+
+    getChatRecordMessageList();
+
+    // getChatRecordWidgetList();
+  }
+
+  // 上传图片
+  Future<bool> uploadImage() async {
+    var token = await storage.read(key: 'token');
+
+    try {
+      final dio = Dio();
+      dio.options.headers["Authorization"] = "Bearer $token";
+      Map<String, dynamic> map = {};
+      map['image'] = await MultipartFile.fromFile(image!.path);
+
+      FormData formData = FormData.fromMap(map);
+
+      final response = await dio.post(
+        '$ip/api/upload/image',
+        data: formData,
+        onSendProgress: (count, total) {
+          print("当前进度 $count, 总进度 $total");
+        },
+      );
+
+      if (response.statusCode == 200) {
+        // setState(() {});
+        imageUrl = response.data["data"];
+        return true;
+      }
+    } catch (e) {
+      return false;
+    }
+
+    return false;
+  }
+
+  // 发送图片
+  Future<void> sendImageMessage() async {
+    bool uploadImageStatus = await uploadImage();
+    if (uploadImageStatus) {
+      // 通过websocket发送图片的url
+      wsSendMessage(accountId, imageUrl, 'CHAT_IMAGE');
+    }
+  }
+
   // 获取头像
   Widget getAvatar(String profile, {double radius = 18}) {
-    return CircleAvatar(
-      backgroundImage: NetworkImage(profile),
-      radius: radius,
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushNamed(context, 'otherUser');
+      },
+      child: CircleAvatar(
+        backgroundImage: NetworkImage(profile),
+        radius: radius,
+      ),
     );
   }
 
@@ -147,10 +316,7 @@ class _ChatRoomState extends State<ChatRoom> {
       title: Row(
         children: [
           // 头像
-          CircleAvatar(
-            backgroundImage: NetworkImage(recvProfile),
-            radius: 18,
-          ),
+          getAvatar(recvProfile, radius: 18),
           const SizedBox(
             width: 5,
           ),
@@ -224,8 +390,87 @@ class _ChatRoomState extends State<ChatRoom> {
           children: [
             // “+”按钮
             GestureDetector(
-              onTap: () {
+              onTap: () async {
                 debugPrint("Add button clicked");
+                image =
+                    await ImagePicker().pickImage(source: ImageSource.gallery);
+
+                // 有选择了一张照片
+                if (image != null) {
+                  // 发送图片
+
+                  imagePath = image!.path;
+                  debugPrint(imagePath);
+
+                  if (!context.mounted) return;
+                  showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          backgroundColor: Colors.white,
+                          title: const Center(
+                            child: Text(
+                              '确认发送图片',
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontSize: 18,
+                                fontFamily: "inter",
+                              ),
+                            ),
+                          ),
+                          // content: const Text('Do you want to use this image?'),
+                          content: Container(
+                            // width: phoneWidth * 0.4,
+                            // height: phoneWidth * 0.4,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(15),
+                              // image: DecorationImage(
+                              //   image: CachedNetworkImageProvider(imagePath),
+                              //   fit: BoxFit.cover,
+                              // ),
+                            ),
+                            child: Image.file(
+                              File(imagePath),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          actions: <Widget>[
+                            TextButton(
+                              child: const Text(
+                                '取消',
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 15,
+                                  fontFamily: "inter",
+                                ),
+                              ),
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                            ),
+                            TextButton(
+                              child: const Text(
+                                '确认',
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 15,
+                                  fontFamily: "inter",
+                                ),
+                              ),
+                              onPressed: () async {
+                                await sendImageMessage();
+                                /* setState(() {
+                                  // 将图像路径设置为选定的图像路径
+                                  // imagePath = pickedFile.path;
+                                }); */
+                                if (!context.mounted) return;
+                                Navigator.of(context).pop(); // 关闭对话框
+                              },
+                            ),
+                          ],
+                        );
+                      });
+                }
               },
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(10, 0, 0, 15),
@@ -252,10 +497,12 @@ class _ChatRoomState extends State<ChatRoom> {
                     focusNode: _focusNode,
                     controller: messageController,
                     maxLines: null,
+                    maxLength: 300,
                     decoration: InputDecoration(
                       contentPadding: const EdgeInsets.symmetric(
                           vertical: 10.0, horizontal: 10.0),
                       hintText: "请输入消息...",
+                      counterText: "",
                       hintStyle: const TextStyle(
                         fontSize: 16,
                         color: Color.fromARGB(255, 169, 169, 169),
@@ -287,10 +534,11 @@ class _ChatRoomState extends State<ChatRoom> {
               ),
             ),
 
-            // “+”按钮
+            // 发送按钮
             GestureDetector(
               onTap: () {
                 debugPrint("send button clicked");
+                sendTextMessage();
               },
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(0, 0, 10, 15),
@@ -371,60 +619,12 @@ class _ChatRoomState extends State<ChatRoom> {
           GestureDetector(
             onTap: () {
               // 查看大图
-              debugPrint("查看大图");
-              /* showDialog(
-                context: context,
-                builder: (BuildContext context) {
-                  // 关闭按钮
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        // 关闭按钮
-
-                        IconButton(
-                          icon: const Icon(
-                            Icons.close,
-                            size: 28,
-                            color: Colors.white,
-                          ),
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
-                        ),
-                        // 图片
-                        Container(
-                          constraints: BoxConstraints(
-                            maxWidth: phoneWidth * 0.9,
-                            maxHeight: phoneWidth * 0.9,
-                            minWidth: phoneWidth * 0.9,
-                            // minHeight: phoneWidth * 0.9,
-                          ),
-                          // width: phoneWidth * 0.9,
-                          // height: phoneWidth * 0.9,
-                          /* decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(15),
-                        image: DecorationImage(
-                          image: NetworkImage(image),
-                          fit: BoxFit.contain,
-                        ),
-                      ), */
-                          child: CachedNetworkImage(
-                            imageUrl: image,
-                            fit: BoxFit.contain,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ); */
               showDialog(
                   context: context,
                   builder: (BuildContext context) {
                     return PhotoView(
-                      imageProvider: CachedNetworkImageProvider(image),
+                      imageProvider:
+                          CachedNetworkImageProvider('$ip/static/$image'),
                     );
                   });
             },
@@ -436,7 +636,7 @@ class _ChatRoomState extends State<ChatRoom> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(15), // 应用圆角
                 child: CachedNetworkImage(
-                  imageUrl: image,
+                  imageUrl: '$ip/static/$image',
                   fit: BoxFit.cover,
                 ),
               ),
@@ -456,99 +656,71 @@ class _ChatRoomState extends State<ChatRoom> {
   Widget build(BuildContext context) {
     phoneWidth = MediaQuery.of(context).size.width;
     phoneHeight = MediaQuery.of(context).size.height;
-    // keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    ModalRoute? route = ModalRoute.of(context);
+    String? currentRoute = route?.settings.name;
 
+    routePath = '$currentRoute/$accountId';
+    // debugPrint('当前路由路径为: $currentRoute/$accountId');
+
+    // StreamBuilder
     return Scaffold(
       appBar: getChatRoomAppBar(),
       resizeToAvoidBottomInset: true,
-      body: Container(
-        color: Colors.white,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: ListView(
-                controller: _scrollController,
+      body: StreamBuilder<List<Message>>(
+          stream: messagesStreamController.stream,
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return Center(
+                child: LoadingAnimationWidget.staggeredDotsWave(
+                    color: Colors.pink, size: 25),
+              );
+            }
+            chatRecordMessageList = snapshot.data!;
+
+            getChatRecordWidgetList();
+            getChatRecordMessageWidgetList();
+
+            // debugPrint("newMessage:$newMessage");
+
+            // 当有新消息通过websocket发送来到时，自动滚动到底部
+            if (newMessage) {
+              if (_scrollController.hasClients) {
+                _scrollController.animateTo(
+                  _scrollController.position.maxScrollExtent + phoneHeight,
+                  duration: const Duration(milliseconds: 500),
+                  curve: Curves.easeOut,
+                );
+              }
+              newMessage = false;
+            }
+
+            return Container(
+              // color: Colors.white,
+              color: Colors.white,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const SizedBox(
-                    height: 15,
+                  // 聊天消息列表
+                  Expanded(
+                    child: ListView(
+                      controller: _scrollController,
+                      children: [
+                        const SizedBox(
+                          height: 15,
+                        ),
+                        //...chatRecordWidgetList,
+                        ...chatRecordMessageWidgetList,
+                      ],
+                    ),
                   ),
-                  getTextMessage(true,
-                      "ashsdajdsafdgggggggggggggyeryebcbcdffgdfggfertertdrgdfggdfgdfgdf"),
-                  getTextMessage(false, "ashsdajds"),
-                  getTextMessage(true, "怎么了嘛"),
-                  getTextMessage(false, "哈哈哈啊哈哈哈，问题不大啦飒飒的打撒"),
-                  getImageMessage(true,
-                      "https://img0.baidu.com/it/u=1230372896,3293421189&fm=253&fmt=auto&app=138&f=JPEG?w=200&h=134"),
-                  getTextMessage(true, "怎么了嘛"),
-                  getTextMessage(false, "哈哈哈啊哈哈哈，问题不大啦飒飒的打撒"),
-                  getTextMessage(true,
-                      "ashsdajdsafdgggggggggggggyeryebcbcdffgdfggfertertdrgdfggdfgdfgdf"),
-                  getTextMessage(false, "ashsdajds"),
-                  getTextMessage(true, "怎么了嘛"),
-                  getImageMessage(false,
-                      "https://ss0.baidu.com/-Po3dSag_xI4khGko9WTAnF6hhy/baike/s=250/sign=d62a883aaf51f3dec7b2be61a4eff0ec/6609c93d70cf3bc7d4018d1cd100baa1cd112a38.jpg"),
-                  getTextMessage(false, "哈哈哈啊哈哈哈，问题不大啦飒飒的打撒"),
-                  getTextMessage(false, "ok"),
-                  getTextMessage(true, "噢"),
-                  getImageMessage(false,
-                      "https://img1.baidu.com/it/u=3197860429,3970438612&fm=253&fmt=auto?w=150&h=150"),
-                  getImageMessage(true,
-                      "https://img2.baidu.com/it/u=2686611253,1092649663&fm=253&fmt=auto&app=138&f=JPEG?w=500&h=375"),
-                  /* Container(
-                    width: phoneWidth,
-                    height: 100,
-                    color: Color.fromARGB(255, 247, 200, 200),
-                  ),
-                  Container(
-                    width: phoneWidth,
-                    height: 100,
-                    color: Color.fromARGB(255, 243, 116, 116),
-                  ),
-                  Container(
-                    width: phoneWidth,
-                    height: 100,
-                    color: Color.fromARGB(255, 177, 121, 121),
-                  ),
-                  Container(
-                    width: phoneWidth,
-                    height: 100,
-                    color: Color.fromARGB(255, 255, 174, 174),
-                  ),
-                  Container(
-                    width: phoneWidth,
-                    height: 150,
-                    color: Color.fromARGB(255, 252, 208, 208),
-                  ),
-                  Container(
-                    width: phoneWidth,
-                    height: 100,
-                    color: Colors.yellowAccent,
-                  ),
-                  Container(
-                    width: phoneWidth,
-                    height: 100,
-                    color: Color.fromARGB(255, 255, 174, 174),
-                  ),
-                  Container(
-                    width: phoneWidth,
-                    height: 150,
-                    color: Color.fromARGB(255, 252, 208, 208),
-                  ),
-                  Container(
-                    width: phoneWidth,
-                    height: 100,
-                    color: Colors.greenAccent,
-                  ), */
+
+                  // 输入框 “+”按钮 发送按钮
+                  getChatRoomBottomNavigationBar(),
                 ],
               ),
-            ),
-
-            // 输入框和 “+”按钮
-            getChatRoomBottomNavigationBar(),
-          ],
-        ),
-      ),
+            );
+          }),
     );
   }
 }

@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 
-import './token.dart';
 import '../api/api.dart';
+import '../component/webSocket.dart';
+import './token.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -83,8 +84,22 @@ class _LoginPageState extends State<LoginPage>
 
         if (response.data['code'] == 200) {
           debugPrint("登录成功");
+
+          // websocket需要的token
+          token = response.data["data"]["token"];
+
           await storage.write(
               key: "token", value: response.data["data"]["token"]);
+
+          // websocket需要的id
+          id = response.data["data"]["id"];
+
+          // 记录用户id
+          await storage.write(
+              key: "id", value: response.data["data"]["id"].toString());
+
+          // 启动websocket
+          stompClient.activate();
 
           setState(() {
             loginSuccess = true;
@@ -98,10 +113,10 @@ class _LoginPageState extends State<LoginPage>
         overlayEntry?.remove();
         final response = error.response;
         if (response != null) {
-          debugPrint(response.data);
+          debugPrint(response.data.toString());
           debugPrint("登录请求失败1");
         } else {
-          debugPrint(error.message);
+          debugPrint(error.message.toString());
           debugPrint("登录请求失败2");
         }
       }

@@ -114,14 +114,14 @@ class Message {
       required this.content});
 }
 
-class ChatPage extends StatefulWidget {
-  const ChatPage({super.key});
+class ChatPage2 extends StatefulWidget {
+  const ChatPage2({super.key});
 
   @override
-  State<ChatPage> createState() => _ChatPageState();
+  State<ChatPage2> createState() => _ChatPage2State();
 }
 
-class _ChatPageState extends State<ChatPage> {
+class _ChatPage2State extends State<ChatPage2> {
   // 从后端请求得到的原始数据
   List<dynamic> data = [];
   String greeting = '';

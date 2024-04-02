@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 
 import '../account/token.dart';
 import '../api/api.dart';
+import '../component/webSocket.dart';
 
 class WelcomePage extends StatefulWidget {
   const WelcomePage({Key? key}) : super(key: key);
@@ -36,12 +37,20 @@ class _WelcomePageState extends State<WelcomePage> {
         debugPrint("jwt登录成功");
         // 保存token
         await storage.write(key: "token", value: response.data["data"]);
+        id = response.data["data"]["id"];
+
+        // 记录用户id
+        await storage.write(
+            key: "id", value: response.data["data"]["id"].toString());
+
+        // 启动websocket
+        stompClient.activate();
         loginState = true;
       }
     } on DioException catch (error) {
       final response = error.response;
       if (response != null) {
-        debugPrint(response.data);
+        debugPrint(response.data.toString());
         debugPrint("登录请求失败1");
       } else {
         debugPrint("登录请求失败2");

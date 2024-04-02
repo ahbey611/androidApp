@@ -25,28 +25,30 @@ class _UserPage2State extends State<UserPage2> {
   // 获取用户相关统计信息 （贴子数+关注数+粉丝数）
   Widget getCountWidget(int count, String title) {
     return Padding(
-        padding: const EdgeInsets.fromLTRB(0, 10, 0, 10),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              count.toString(),
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-              ),
+      padding: const EdgeInsets.fromLTRB(0, 10, 0, 10),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            count.toString(),
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
             ),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 15,
-                color: Color.fromARGB(255, 122, 122, 122),
-              ),
+          ),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 15,
+              color: Color.fromARGB(255, 122, 122, 122),
             ),
-          ],
-        ));
+          ),
+        ],
+      ),
+    );
   }
 
+  // 获取功能按钮
   Widget getFunctionWidget(String title, String icon, String route) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(0, 15, 0, 15),
@@ -243,7 +245,7 @@ class _UserPage2State extends State<UserPage2> {
                         ),
                       ),
                     ],
-                  )
+                  ),
                 ],
               ),
             ),

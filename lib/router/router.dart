@@ -10,6 +10,11 @@ import '../homePages/chat/chat.dart';
 import '../homePages/chat/chatRoom.dart';
 import '../homePages/post/post.dart';
 import '../homePages/user/user2.dart';
+import "../homePages/user/otherUser.dart";
+
+import "../homePages/chat/chatDraft.dart";
+
+String routePath = '/home';
 
 Map routes = {
   '/': (context) => const WelcomePage(),
@@ -22,6 +27,8 @@ Map routes = {
   '/chatRoom': (context, {arguments}) => ChatRoom(arguments: arguments),
   '/post': (context) => const PostPage(),
   'user2': (context) => const UserPage2(),
+  'otherUser': (context) => const OtherUserPage(),
+  'chatDraft': (context) => const ChatPage2(),
 };
 
 var onGenerateRoute = (RouteSettings settings) {
@@ -32,12 +39,14 @@ var onGenerateRoute = (RouteSettings settings) {
   if (pageContentBuilder != null) {
     if (settings.arguments != null) {
       final Route route = MaterialPageRoute(
+          settings: settings,
           builder: (context) =>
               pageContentBuilder(context, arguments: settings.arguments));
       return route;
     } else {
-      final Route route =
-          MaterialPageRoute(builder: (context) => pageContentBuilder(context));
+      final Route route = MaterialPageRoute(
+          settings: settings,
+          builder: (context) => pageContentBuilder(context));
       return route;
     }
   }
