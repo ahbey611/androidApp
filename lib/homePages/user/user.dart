@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 // import '../../component/footer.dart';
 // import '../../component/header.dart';
 import 'personal_info.dart';
+import 'post_collection.dart';
 
 class UserPage extends StatefulWidget {
   const UserPage({super.key});
@@ -11,12 +12,52 @@ class UserPage extends StatefulWidget {
 }
 
 class _UserPageState extends State<UserPage> {
+  var userList = [
+    {
+      "username": "用户A",
+      "profile":
+          "https://k.sinaimg.cn/n/sinakd20106/560/w1080h1080/20240302/4b5e-6347ebbf001cd7e26a2ab0579c54085b.jpg/w700d1q75cms.jpg"
+    },
+    {
+      "username": "用户B",
+      "profile":
+          "https://k.sinaimg.cn/n/sinakd20106/560/w1080h1080/20240302/4b5e-6347ebbf001cd7e26a2ab0579c54085b.jpg/w700d1q75cms.jpg"
+    },
+    {
+      "username": "用户C",
+      "profile":
+          "https://k.sinaimg.cn/n/sinakd20106/560/w1080h1080/20240302/4b5e-6347ebbf001cd7e26a2ab0579c54085b.jpg/w700d1q75cms.jpg"
+    },
+    {
+      "username": "用户D",
+      "profile":
+          "https://k.sinaimg.cn/n/sinakd20106/560/w1080h1080/20240302/4b5e-6347ebbf001cd7e26a2ab0579c54085b.jpg/w700d1q75cms.jpg"
+    }
+  ];
   // 帖子、关注、粉丝的按钮
   Widget upperButton(String buttonTitle, int num) {
     return Expanded(
       child: InkWell(
         onTap: () {
           print("pressed " + buttonTitle);
+          switch (buttonTitle) {
+            case "帖子":
+              {
+                Navigator.of(context).push(MaterialPageRoute(
+                    builder: (context) => const PostCollection(
+                          pageTitle: "我的帖子",
+                          leftColor: Color.fromARGB(255, 214, 212, 240),
+                          rightColor: Color.fromARGB(255, 254, 215, 249),
+                        )));
+              }
+              break;
+
+            case "关注":
+            case "粉丝":
+              {
+                showUserList("我的$buttonTitle");
+              }
+          }
         },
         child: Ink(
           padding: const EdgeInsets.fromLTRB(0, 10, 0, 10),
@@ -45,8 +86,36 @@ class _UserPageState extends State<UserPage> {
       child: InkWell(
         onTap: () {
           print("pressed " + buttonTitle);
-          Navigator.of(context).push(
-              MaterialPageRoute(builder: (context) => const PersonalInfo()));
+          switch (buttonTitle) {
+            case "个人资料":
+              {
+                Navigator.of(context).push(MaterialPageRoute(
+                    builder: (context) => const PersonalInfo()));
+              }
+              break;
+
+            case "我的点赞":
+              {
+                Navigator.of(context).push(MaterialPageRoute(
+                    builder: (context) => PostCollection(
+                          pageTitle: buttonTitle,
+                          leftColor: const Color.fromARGB(255, 255, 213, 213),
+                          rightColor: const Color.fromARGB(255, 254, 215, 249),
+                        )));
+              }
+              break;
+
+            case "我的收藏":
+              {
+                Navigator.of(context).push(MaterialPageRoute(
+                    builder: (context) => PostCollection(
+                          pageTitle: buttonTitle,
+                          leftColor: const Color.fromARGB(255, 254, 215, 249),
+                          rightColor: const Color.fromARGB(255, 247, 237, 209),
+                        )));
+              }
+              break;
+          }
         },
         child: Ink(
           padding: const EdgeInsets.fromLTRB(0, 15, 0, 15),
@@ -63,6 +132,41 @@ class _UserPageState extends State<UserPage> {
         ),
       ),
     );
+  }
+
+  // 弹出用户列表
+  void showUserList(String title) {
+    showModalBottomSheet(
+        context: context,
+        builder: (BuildContext context) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: Align(
+                  alignment: Alignment.center,
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: userList.length,
+                    itemBuilder: (context, index) {
+                      return ListTile(
+                        title: Text(userList[index]["username"]!),
+                        onTap: () {},
+                      );
+                    }),
+              ),
+              const SizedBox(height: 50)
+            ],
+          );
+        });
   }
 
   @override
@@ -159,7 +263,7 @@ class _UserPageState extends State<UserPage> {
                                     color: const Color.fromARGB(
                                         255, 249, 210, 246),
                                     borderRadius: BorderRadius.circular(15)),
-                                child: const Text("年级"),
+                                child: const Text("学生"),
                               )
                             ],
                           )

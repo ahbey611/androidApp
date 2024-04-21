@@ -7,7 +7,13 @@ import 'video.dart';
 
 class DetailedPost extends StatefulWidget {
   final Map postInfo;
-  const DetailedPost({super.key, required this.postInfo});
+  final bool needPopComment;
+  final String backTo;
+  const DetailedPost(
+      {super.key,
+      required this.postInfo,
+      required this.needPopComment,
+      required this.backTo});
 
   @override
   State<DetailedPost> createState() => _DetailedPostState();
@@ -371,13 +377,23 @@ class _DetailedPostState extends State<DetailedPost> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (widget.needPopComment) {
+        showCommentDialog(context, false, {});
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     var screenWidth = MediaQuery.of(context).size.width;
     var imagesRawString = widget.postInfo["images"];
     List imageList = separateString(imagesRawString!);
 
     return Scaffold(
-      appBar: getAppBar(true, "返回首页"),
+      appBar: getAppBar(true, "返回${widget.backTo}"),
       resizeToAvoidBottomInset: false,
       body: SingleChildScrollView(
         controller: wholeViewController,

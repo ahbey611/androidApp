@@ -37,22 +37,7 @@ class _HomePageState extends State<HomePage> {
   double leftListHeight = 0;
   double rightListHeight = 0;
   bool filterFollow = true;
-  var tileColorList = const [
-    Color.fromARGB(255, 254, 215, 249),
-    Color.fromARGB(255, 245, 216, 245),
-    Color.fromARGB(255, 201, 198, 246),
-    Color.fromARGB(255, 215, 230, 245),
-    Color.fromARGB(255, 195, 215, 252),
-    Color.fromARGB(255, 237, 208, 255)
-  ];
-  var wordColorList = const [
-    Color.fromARGB(255, 246, 107, 227),
-    Color.fromARGB(255, 143, 89, 135),
-    Color.fromARGB(255, 110, 101, 228),
-    Color.fromARGB(255, 88, 160, 227),
-    Color.fromARGB(255, 32, 73, 150),
-    Color.fromARGB(255, 172, 86, 225)
-  ];
+
   var totalPostList = [
     {
       "content": "测试一些发帖内容这些是用户的发帖内容",
@@ -355,16 +340,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // 将图片串拆分成列表形式
-  List<String> separateString(String input) {
-    if (input.endsWith(';')) {
-      input = input.substring(0, input.length - 1);
-    }
-    List<String> result = input.split(';');
-    result.removeWhere((element) => element.isEmpty);
-    return result;
-  }
-
   int randomNumber(int a, int b) {
     if (a > b) {
       throw ArgumentError('a must be less than or equal to b');
@@ -372,127 +347,6 @@ class _HomePageState extends State<HomePage> {
 
     Random random = Random();
     return random.nextInt(b - a + 1) + a;
-  }
-
-  // 返回单个帖子
-  Widget singlePost(int index, List list, List colorSequence) {
-    var imagesRawString = list[index]["images"];
-    List imageList = separateString(imagesRawString!);
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        contentPadding: const EdgeInsets.fromLTRB(8, 0, 8, 0),
-        onTap: () {
-          Navigator.of(context).push(MaterialPageRoute(
-              builder: (context) => DetailedPost(
-                    postInfo: list[index],
-                  )));
-        },
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
-        tileColor: tileColorList[colorSequence[index]],
-        title: Column(
-          children: [
-            // 文本内容
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                list[index]["content"]!,
-                style: const TextStyle(
-                  fontSize: 12,
-                ),
-                maxLines:
-                    (list[index]["images"] != "" || list[index]["video"] != "")
-                        ? 3
-                        : 5,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            // 图片（只展示第一张）
-            list[index]["images"] != ""
-                ? Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Stack(
-                      alignment: Alignment.topRight,
-                      children: [
-                        AspectRatio(
-                            aspectRatio: 1.0,
-                            child: CachedNetworkImage(
-                              imageUrl: imageList[0],
-                              fit: BoxFit.cover,
-                              placeholder: (context, url) => Center(
-                                child: LoadingAnimationWidget.staggeredDotsWave(
-                                    color: Colors.white, size: 25),
-                              ),
-                              errorWidget: (context, url, error) =>
-                                  const Icon(Icons.error),
-                            )),
-                        imageList.length > 1
-                            ? const Padding(
-                                padding: EdgeInsets.only(top: 5, right: 5),
-                                child: Icon(
-                                  Icons.collections,
-                                  color: Colors.white70,
-                                  size: 25,
-                                ),
-                              )
-                            : const SizedBox(
-                                height: 0,
-                                width: 0,
-                              )
-                      ],
-                    ))
-                : const SizedBox(
-                    width: 0,
-                    height: 0,
-                  ),
-            // 视频
-            list[index]["video"] != ""
-                ? Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        VideoPreview(
-                          videoUrl: list[index]["video"]!,
-                        ),
-                        const Icon(
-                          Icons.play_circle_outline,
-                          color: Colors.white70,
-                          size: 40,
-                        )
-                      ],
-                    ),
-                  )
-                : const SizedBox(
-                    width: 0,
-                    height: 0,
-                  ),
-            // 用户名
-            Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  list[index]["username"]!,
-                  style: TextStyle(
-                      fontSize: 10, color: wordColorList[colorSequence[index]]),
-                ),
-              ),
-            ),
-            // 发布日期
-            Align(
-              alignment: Alignment.centerRight,
-              child: Text(
-                list[index]["date"]!,
-                style: TextStyle(
-                    fontSize: 10, color: wordColorList[colorSequence[index]]),
-              ),
-            )
-          ],
-        ),
-      ),
-    );
   }
 
   void _onScroll() {
@@ -503,8 +357,8 @@ class _HomePageState extends State<HomePage> {
     if (leftListHeight.toInt() <=
         (wholeListViewController.position.pixels + pageHeight).toInt()) {
       if (!_isLoading) {
-        int tgtCount = 3;
-        if (totalPostList.length - accumulateTotalPost < 3) {
+        int tgtCount = 2;
+        if (totalPostList.length - accumulateTotalPost < 2) {
           tgtCount = totalPostList.length - accumulateTotalPost;
         }
         var newLeftPostList = testLeftPostList;
@@ -534,8 +388,8 @@ class _HomePageState extends State<HomePage> {
     else if (rightListHeight.toInt() <=
         (wholeListViewController.position.pixels + pageHeight).toInt()) {
       if (!_isLoading) {
-        int tgtCount = 3;
-        if (totalPostList.length - accumulateTotalPost < 3) {
+        int tgtCount = 2;
+        if (totalPostList.length - accumulateTotalPost < 2) {
           tgtCount = totalPostList.length - accumulateTotalPost;
         }
         var newRightPostList = testRightPostList;
@@ -650,7 +504,10 @@ class _HomePageState extends State<HomePage> {
                 shrinkWrap: true,
                 itemCount: testLeftPostList.length,
                 itemBuilder: (context, index) {
-                  return singlePost(index, testLeftPostList, leftColorSequence);
+                  //return singlePost(index, testLeftPostList, leftColorSequence);
+                  return SinglePostBlock(
+                      postInfo: testLeftPostList[index],
+                      colorIndex: leftColorSequence[index]);
                 },
               ),
             ),
@@ -663,12 +520,226 @@ class _HomePageState extends State<HomePage> {
                 shrinkWrap: true,
                 itemCount: testRightPostList.length,
                 itemBuilder: (context, index) {
-                  return singlePost(
-                      index, testRightPostList, rightColorSequence);
+                  // return singlePost(
+                  //     index, testRightPostList, rightColorSequence);
+                  return SinglePostBlock(
+                      postInfo: testRightPostList[index],
+                      colorIndex: rightColorSequence[index]);
                 },
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class SinglePostBlock extends StatefulWidget {
+  final Map postInfo;
+  final int colorIndex;
+  const SinglePostBlock(
+      {super.key, required this.postInfo, required this.colorIndex});
+
+  @override
+  State<SinglePostBlock> createState() => _SinglePostBlockState();
+}
+
+class _SinglePostBlockState extends State<SinglePostBlock> {
+  var tileColorList = const [
+    Color.fromARGB(255, 254, 215, 249),
+    Color.fromARGB(255, 245, 216, 245),
+    Color.fromARGB(255, 201, 198, 246),
+    Color.fromARGB(255, 215, 230, 245),
+    Color.fromARGB(255, 195, 215, 252),
+    Color.fromARGB(255, 237, 208, 255)
+  ];
+  var wordColorList = const [
+    Color.fromARGB(255, 246, 107, 227),
+    Color.fromARGB(255, 143, 89, 135),
+    Color.fromARGB(255, 110, 101, 228),
+    Color.fromARGB(255, 88, 160, 227),
+    Color.fromARGB(255, 32, 73, 150),
+    Color.fromARGB(255, 172, 86, 225)
+  ];
+  var imagesRawString = "";
+  var imageList = [];
+  var isLike = false;
+
+  @override
+  void initState() {
+    super.initState();
+    imagesRawString = widget.postInfo["images"];
+    imageList = separateString(imagesRawString);
+  }
+
+  // 将图片串拆分成列表形式
+  List<String> separateString(String input) {
+    if (input.endsWith(';')) {
+      input = input.substring(0, input.length - 1);
+    }
+    List<String> result = input.split(';');
+    result.removeWhere((element) => element.isEmpty);
+    return result;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: InkWell(
+        onDoubleTap: () {
+          setState(() {
+            isLike = !isLike;
+          });
+        },
+        child: ListTile(
+          contentPadding: const EdgeInsets.fromLTRB(8, 0, 8, 0),
+          onTap: () {
+            Navigator.of(context).push(MaterialPageRoute(
+                builder: (context) => DetailedPost(
+                      postInfo: widget.postInfo,
+                      needPopComment: false,
+                      backTo: "首页",
+                    )));
+          },
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
+          tileColor: tileColorList[widget.colorIndex],
+          title: Column(
+            children: [
+              // 文本内容
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  widget.postInfo["content"]!,
+                  style: const TextStyle(
+                    fontSize: 12,
+                  ),
+                  maxLines: (widget.postInfo["images"] != "" ||
+                          widget.postInfo["video"] != "")
+                      ? 3
+                      : 5,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              // 图片（只展示第一张）
+              widget.postInfo["images"] != ""
+                  ? Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Stack(
+                        alignment: Alignment.topRight,
+                        children: [
+                          AspectRatio(
+                              aspectRatio: 1.0,
+                              child: CachedNetworkImage(
+                                imageUrl: imageList[0],
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => Center(
+                                  child:
+                                      LoadingAnimationWidget.staggeredDotsWave(
+                                          color: Colors.white, size: 25),
+                                ),
+                                errorWidget: (context, url, error) =>
+                                    const Icon(Icons.error),
+                              )),
+                          imageList.length > 1
+                              ? const Padding(
+                                  padding: EdgeInsets.only(top: 5, right: 5),
+                                  child: Icon(
+                                    Icons.collections,
+                                    color: Colors.white70,
+                                    size: 25,
+                                  ),
+                                )
+                              : const SizedBox(
+                                  height: 0,
+                                  width: 0,
+                                )
+                        ],
+                      ),
+                    )
+                  : const SizedBox(
+                      width: 0,
+                      height: 0,
+                    ),
+              // 视频
+              widget.postInfo["video"] != ""
+                  ? Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          VideoPreview(
+                            videoUrl: widget.postInfo["video"]!,
+                          ),
+                          const Icon(
+                            Icons.play_circle_outline,
+                            color: Colors.white70,
+                            size: 40,
+                          )
+                        ],
+                      ),
+                    )
+                  : const SizedBox(
+                      width: 0,
+                      height: 0,
+                    ),
+              Stack(
+                alignment: Alignment.bottomLeft,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 3, left: 3),
+                    child: isLike
+                        ? InkWell(
+                            onTap: () {
+                              setState(() {
+                                isLike = !isLike;
+                              });
+                            },
+                            child: Image.asset("assets/icons/heartFilled.png",
+                                height: 15),
+                          )
+                        : InkWell(
+                            onTap: () {
+                              setState(() {
+                                isLike = !isLike;
+                              });
+                            },
+                            child: Image.asset("assets/icons/heart.png",
+                                height: 15),
+                          ),
+                  ),
+                  Column(
+                    children: [
+                      // 用户名
+                      Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            widget.postInfo["username"]!,
+                            style: TextStyle(
+                                fontSize: 10,
+                                color: wordColorList[widget.colorIndex]),
+                          ),
+                        ),
+                      ),
+                      // 发布日期
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          widget.postInfo["date"]!,
+                          style: TextStyle(
+                              fontSize: 10,
+                              color: wordColorList[widget.colorIndex]),
+                        ),
+                      )
+                    ],
+                  )
+                ],
+              )
+            ],
+          ),
         ),
       ),
     );
