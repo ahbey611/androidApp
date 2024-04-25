@@ -1,10 +1,15 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:video_player/video_player.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:camera/camera.dart';
+//import 'package:duration_picker/duration_picker.dart';
 import '../../component/header.dart';
+import '../home/gallery.dart';
+import '../home/video.dart';
 
 class CreatePost extends StatefulWidget {
   final String title;
@@ -26,16 +31,14 @@ class _CreatePostState extends State<CreatePost> {
   var selectedImages = [];
   var imagePathList = [];
   var imagePreviewList = <Widget>[];
-  bool showPic = false;
+  bool showPic = false, showVid = false, isLandscape = true, fromDraft = false;
   File? videoPreview;
-  VideoPlayerController? videoPreviewController;
-  bool showVid = false;
   double lastPosition = 0;
   late ScrollController imageController;
-  bool isLandscape = true;
   final TextEditingController textController = TextEditingController();
   String curContent = "", curImages = "", curVideo = "";
-  bool fromDraft = false;
+  bool videoFromNetwork = false;
+  String networkVideoPath = "";
 
   // TODOO: 目前还没限制可以添加多少张图片
   void createImageList() {
@@ -44,28 +47,41 @@ class _CreatePostState extends State<CreatePost> {
       imagePreviewList.add(Stack(
         alignment: Alignment.topRight,
         children: [
-          SizedBox(
-            width: 150,
-            height: 150,
-            child: fromDraft
-                ? CachedNetworkImage(
-                    imageUrl: selectedImages[i],
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => Center(
-                      child: LoadingAnimationWidget.staggeredDotsWave(
-                          color: Colors.purple, size: 25),
+          InkWell(
+            onTap: () {
+              showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return FileGallery(
+                      images: imagePathList,
+                      curIndex: i,
+                    );
+                  });
+            },
+            child: SizedBox(
+              width: 150,
+              height: 150,
+              child: fromDraft
+                  ? CachedNetworkImage(
+                      imageUrl: selectedImages[i],
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Center(
+                        child: LoadingAnimationWidget.staggeredDotsWave(
+                            color: Colors.purple, size: 25),
+                      ),
+                      errorWidget: (context, url, error) =>
+                          const Icon(Icons.error),
+                    )
+                  : Image.file(
+                      selectedImages[i],
+                      fit: BoxFit.cover,
                     ),
-                    errorWidget: (context, url, error) =>
-                        const Icon(Icons.error),
-                  )
-                : Image.file(
-                    selectedImages[i],
-                    fit: BoxFit.cover,
-                  ),
+            ),
           ),
           InkWell(
             onTap: () {
               selectedImages.removeAt(i);
+              imagePathList.removeAt(i);
               createImageList();
               lastPosition = imageController.offset;
               if (selectedImages.isEmpty) {
@@ -97,6 +113,129 @@ class _CreatePostState extends State<CreatePost> {
     return result;
   }
 
+  // 从图库选择照片
+  Future<void> pickImageFromGallery() async {
+    final image = await ImagePicker().pickMultiImage();
+    List<XFile> xFilePick = image;
+    if (xFilePick.isNotEmpty) {
+      for (var i = 0; i < xFilePick.length; i++) {
+        selectedImages.add(File(xFilePick[i].path));
+        imagePathList.add(xFilePick[i].path);
+      }
+
+      createImageList();
+      setState(() {
+        showPic = true;
+      });
+    }
+  }
+
+  // 从图库选取视频
+  Future<void> pickVideoFromGallery() async {
+    final video = await ImagePicker().pickVideo(source: ImageSource.gallery);
+    XFile? xFilePick = video;
+    if (xFilePick != null) {
+      videoPreview = File(xFilePick.path);
+      setState(() {
+        videoFromNetwork = false;
+        showVid = true;
+      });
+    }
+  }
+
+  // 弹出视频获取途径
+  void showVideoChoice() {
+    showModalBottomSheet(
+        context: context,
+        builder: (BuildContext context) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: const Center(
+                  child: Text("相机拍摄"),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(context, MaterialPageRoute(
+                    builder: (context) {
+                      return const TakePictureScreen(
+                        isVideo: true,
+                      );
+                    },
+                  )).then((value) {
+                    if (value != "" && value != null) {
+                      videoPreview = File(value);
+                      setState(() {
+                        showVid = true;
+                        videoFromNetwork = false;
+                      });
+                    }
+                  });
+                },
+              ),
+              ListTile(
+                title: const Center(
+                  child: Text("图库选取"),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  pickVideoFromGallery();
+                },
+              ),
+              const SizedBox(height: 50)
+            ],
+          );
+        });
+  }
+
+  // 弹出照片获取途径
+  void showPictureChoice() {
+    showModalBottomSheet(
+        context: context,
+        builder: (BuildContext context) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: const Center(
+                  child: Text("相机拍摄"),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(context, MaterialPageRoute(
+                    builder: (context) {
+                      return const TakePictureScreen(
+                        isVideo: false,
+                      );
+                    },
+                  )).then((value) {
+                    if (value != "" && value != null) {
+                      selectedImages.add(File(value));
+                      imagePathList.add(value);
+                      createImageList();
+                      setState(() {
+                        showPic = true;
+                      });
+                    }
+                  });
+                },
+              ),
+              ListTile(
+                title: const Center(
+                  child: Text("图库选图"),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  pickImageFromGallery();
+                },
+              ),
+              const SizedBox(height: 50)
+            ],
+          );
+        });
+  }
+
   @override
   void dispose() {
     textController.dispose();
@@ -119,17 +258,11 @@ class _CreatePostState extends State<CreatePost> {
       setState(() {});
     }
     if (curVideo != "") {
-      videoPreviewController = VideoPlayerController.networkUrl(
-        Uri.parse(curVideo),
-      )..initialize().then((_) {
-          double videoWidth = videoPreviewController!.value.size.width;
-          double videoHeight = videoPreviewController!.value.size.height;
-
-          setState(() {
-            isLandscape = videoWidth > videoHeight;
-            showVid = true;
-          });
-        });
+      setState(() {
+        videoFromNetwork = true;
+        networkVideoPath = curVideo;
+        showVid = true;
+      });
     }
   }
 
@@ -163,57 +296,19 @@ class _CreatePostState extends State<CreatePost> {
                 children: [
                   // 添加照片
                   IconButton(
-                      onPressed: showVid
-                          ? null
-                          : () async {
-                              final image =
-                                  await ImagePicker().pickMultiImage();
-                              List<XFile> xFilePick = image;
-                              if (xFilePick.isNotEmpty) {
-                                for (var i = 0; i < xFilePick.length; i++) {
-                                  selectedImages.add(File(xFilePick[i].path));
-                                  imagePathList.add(xFilePick[i].path);
-                                }
-
-                                createImageList();
-                                setState(() {
-                                  showPic = true;
-                                });
-                              }
-                            },
-                      iconSize: 30,
-                      icon: Icon(
-                        Icons.image,
-                        size: 25,
-                        color: showVid
-                            ? Colors.grey
-                            : const Color.fromARGB(255, 192, 161, 235),
-                      )),
+                    onPressed: showVid ? null : showPictureChoice,
+                    iconSize: 30,
+                    icon: Icon(
+                      Icons.image,
+                      size: 25,
+                      color: showVid
+                          ? Colors.grey
+                          : const Color.fromARGB(255, 192, 161, 235),
+                    ),
+                  ),
                   // 添加视频
                   IconButton(
-                    onPressed: showPic
-                        ? null
-                        : () async {
-                            final video = await ImagePicker()
-                                .pickVideo(source: ImageSource.gallery);
-                            XFile? xFilePick = video;
-                            if (xFilePick != null) {
-                              videoPreview = File(xFilePick.path);
-                              videoPreviewController = VideoPlayerController
-                                  .file(videoPreview!)
-                                ..initialize().then((_) {
-                                  double videoWidth =
-                                      videoPreviewController!.value.size.width;
-                                  double videoHeight =
-                                      videoPreviewController!.value.size.height;
-
-                                  setState(() {
-                                    isLandscape = videoWidth > videoHeight;
-                                    showVid = true;
-                                  });
-                                });
-                            }
-                          },
+                    onPressed: showPic ? null : showVideoChoice,
                     iconSize: 30,
                     icon: Icon(
                       Icons.videocam,
@@ -222,6 +317,7 @@ class _CreatePostState extends State<CreatePost> {
                           : const Color.fromARGB(255, 192, 161, 235),
                     ),
                   ),
+                  // 空白
                   const Expanded(
                     child: SizedBox(),
                   ),
@@ -273,43 +369,20 @@ class _CreatePostState extends State<CreatePost> {
                 ),
               ),
             ),
-            // 显示视频路径
-            // Visibility(
-            //   visible: showVid,
-            //   child: Padding(
-            //     padding: const EdgeInsets.all(20),
-            //     child: Column(
-            //       children: [
-            //         Text(
-            //           videoPreview != null ? videoPreview!.path : "",
-            //           style: const TextStyle(color: Colors.blue),
-            //         ),
-            //         const SizedBox(height: 15),
-            //       ],
-            //     ),
-            //   ),
-            // ),
             // 视频显示区
             showVid
                 ? Padding(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
                     child: Stack(
                       alignment: Alignment.topRight,
                       children: [
-                        isLandscape
-                            ? AspectRatio(
-                                aspectRatio:
-                                    videoPreviewController!.value.aspectRatio,
-                                child: VideoPlayer(videoPreviewController!),
-                              )
-                            : SizedBox(
-                                height: 300,
-                                child: AspectRatio(
-                                  aspectRatio:
-                                      videoPreviewController!.value.aspectRatio,
-                                  child: VideoPlayer(videoPreviewController!),
-                                ),
-                              ),
+                        VideoPlayerScreen(
+                            fromFile: !videoFromNetwork,
+                            videoLink: videoFromNetwork
+                                ? networkVideoPath
+                                : videoPreview!.path,
+                            enlarge: true,
+                            fullscreen: true),
                         InkWell(
                           onTap: () {
                             setState(() {
@@ -330,6 +403,280 @@ class _CreatePostState extends State<CreatePost> {
                 : const SizedBox(),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// =============================================================
+
+class TakePictureScreen extends StatefulWidget {
+  final bool isVideo;
+  const TakePictureScreen({
+    super.key,
+    required this.isVideo,
+  });
+
+  @override
+  State<TakePictureScreen> createState() => _TakePictureScreenState();
+}
+
+class _TakePictureScreenState extends State<TakePictureScreen> {
+  late CameraController cameraController;
+  late Future<void> initializeControllerFuture;
+  String cameraImagePath = "";
+  String videoSavePath = "";
+  VideoPlayerController? videoPreviewController;
+  bool isLandscape = true;
+  Duration recordingDuration = Duration.zero;
+  late Timer recordingTimer;
+
+  // 初始化相机
+  Future<void> initializeCamera() async {
+    final cameras = await availableCameras();
+    final firstCamera = cameras.first;
+
+    cameraController = CameraController(
+      firstCamera,
+      ResolutionPreset.high,
+    );
+
+    return cameraController.initialize();
+  }
+
+  // 用相机拍摄
+  Future<void> takePictureFromCamera() async {
+    await initializeControllerFuture;
+    final image = await cameraController.takePicture();
+    setState(() {
+      cameraImagePath = image.path;
+    });
+  }
+
+  // 计时转换
+  String formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
+    String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
+    return "$twoDigitMinutes:$twoDigitSeconds";
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    initializeControllerFuture = initializeCamera();
+  }
+
+  @override
+  void dispose() {
+    cameraController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    String pageTitle = widget.isVideo ? "拍摄视频" : "拍摄单张照片";
+
+    return Scaffold(
+      resizeToAvoidBottomInset: false,
+      appBar: getAppBar(true, pageTitle),
+      body: FutureBuilder<void>(
+        future: initializeControllerFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.done) {
+            return SingleChildScrollView(
+              child: Column(
+                children: [
+                  Stack(
+                    alignment: Alignment.topCenter,
+                    children: [
+                      // 摄像头预览
+                      AspectRatio(
+                        aspectRatio: 0.75,
+                        child: CameraPreview(cameraController),
+                      ),
+                      // 计时显示
+                      widget.isVideo
+                          ? Positioned(
+                              top: 10,
+                              child: Text(
+                                formatDuration(recordingDuration),
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold),
+                              ))
+                          : const SizedBox(),
+                    ],
+                  ),
+                  // 拍摄按钮+照片预览
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 30, 20, 30),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: widget.isVideo
+                          ? [
+                              // 录制按钮
+                              IconButton(
+                                onPressed: () async {
+                                  // 开始录制
+                                  if (!cameraController
+                                      .value.isRecordingVideo) {
+                                    await initializeControllerFuture;
+                                    await cameraController
+                                        .startVideoRecording()
+                                        .then(
+                                      (value) {
+                                        if (mounted) {
+                                          setState(() {});
+                                        }
+                                        recordingDuration = Duration.zero;
+                                        recordingTimer = Timer.periodic(
+                                            const Duration(seconds: 1),
+                                            (timer) {
+                                          setState(() {
+                                            recordingDuration +=
+                                                const Duration(seconds: 1);
+                                          });
+                                        });
+                                      },
+                                    );
+                                  } else {
+                                    // 停止录制
+                                    await cameraController
+                                        .stopVideoRecording()
+                                        .then((XFile? file) {
+                                      if (mounted) {
+                                        setState(() {});
+                                      }
+                                      recordingTimer.cancel();
+                                      if (file != null) {
+                                        setState(() {
+                                          videoSavePath = file.path;
+                                        });
+                                      }
+                                    });
+                                  }
+                                },
+                                icon: cameraController.value.isRecordingVideo
+                                    ? const Icon(Icons.square_rounded)
+                                    : const Icon(Icons.camera),
+                                color: Colors.white,
+                                iconSize: 30,
+                                padding: const EdgeInsets.all(15),
+                                style: ButtonStyle(
+                                  backgroundColor: MaterialStatePropertyAll(
+                                      cameraController.value.isRecordingVideo
+                                          ? Colors.red
+                                          : const Color.fromARGB(
+                                              255, 172, 98, 185)),
+                                ),
+                              ),
+                              // 视频预览
+                              SizedBox(
+                                  width: 120,
+                                  height: 120,
+                                  child: videoSavePath != ""
+                                      ? VideoPlayerScreen(
+                                          fromFile: true,
+                                          videoLink: videoSavePath,
+                                          enlarge: false,
+                                          fullscreen: false)
+                                      : const SizedBox()),
+                              // 确认按钮
+                              IconButton(
+                                onPressed: videoSavePath != ""
+                                    ? () {
+                                        Navigator.pop(context, videoSavePath);
+                                      }
+                                    : null,
+                                icon: const Icon(Icons.check),
+                                color: Colors.white,
+                                iconSize: 30,
+                                padding: const EdgeInsets.all(15),
+                                style: ButtonStyle(
+                                  backgroundColor: MaterialStatePropertyAll(
+                                    videoSavePath != ""
+                                        ? Colors.green
+                                        : Colors.grey,
+                                  ),
+                                ),
+                              ),
+                            ]
+                          : [
+                              // 拍摄按钮
+                              IconButton(
+                                onPressed: () async {
+                                  await initializeControllerFuture;
+                                  final image =
+                                      await cameraController.takePicture();
+                                  setState(() {
+                                    cameraImagePath = image.path;
+                                  });
+                                },
+                                icon: const Icon(Icons.camera_alt_outlined),
+                                color: Colors.white,
+                                iconSize: 30,
+                                padding: const EdgeInsets.all(15),
+                                style: const ButtonStyle(
+                                  backgroundColor: MaterialStatePropertyAll(
+                                      Color.fromARGB(255, 172, 98, 185)),
+                                ),
+                              ),
+                              // 照片预览
+                              SizedBox(
+                                width: 120,
+                                height: 120,
+                                child: cameraImagePath != ""
+                                    ? InkWell(
+                                        onTap: () {
+                                          showDialog(
+                                              context: context,
+                                              builder: (BuildContext context) {
+                                                return FileGallery(
+                                                  images: [cameraImagePath],
+                                                  curIndex: 0,
+                                                );
+                                              });
+                                        },
+                                        child: Image.file(
+                                          File(cameraImagePath),
+                                          fit: BoxFit.cover,
+                                        ),
+                                      )
+                                    : const SizedBox(),
+                              ),
+                              // 确认按钮
+                              IconButton(
+                                onPressed: cameraImagePath != ""
+                                    ? () {
+                                        Navigator.pop(context, cameraImagePath);
+                                      }
+                                    : null,
+                                icon: const Icon(Icons.check),
+                                color: Colors.white,
+                                iconSize: 30,
+                                padding: const EdgeInsets.all(15),
+                                style: ButtonStyle(
+                                  backgroundColor: MaterialStatePropertyAll(
+                                    cameraImagePath != ""
+                                        ? Colors.green
+                                        : Colors.grey,
+                                  ),
+                                ),
+                              ),
+                            ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          } else {
+            return Center(
+                child: LoadingAnimationWidget.staggeredDotsWave(
+                    color: Colors.purple, size: 25));
+          }
+        },
       ),
     );
   }
