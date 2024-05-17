@@ -280,8 +280,8 @@ class _ChatPageState extends State<ChatPage> {
 
     String currentRoute = routePath;
 
-    debugPrint('当前路由路径为: $currentRoute');
-    debugPrint("/chat 页面刷新");
+    // debugPrint('当前路由路径为: $currentRoute');
+    // debugPrint("/chat 页面刷新");
 
     return Scaffold(
       appBar: getAppBar(false, "消息"),

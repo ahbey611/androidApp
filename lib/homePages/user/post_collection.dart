@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
+import 'package:tsinghua/provider/post.dart';
 import '../../component/header.dart';
 import '../home/video.dart';
 import '../home/gallery.dart';
 import '../home/detailed_post.dart';
+import '../../provider/post.dart';
 
 class PostCollection extends StatefulWidget {
   final String pageTitle;
@@ -113,7 +115,26 @@ class _PostCollectionState extends State<PostCollection> {
                   padding: const EdgeInsets.only(bottom: 15),
                   child: SinglePost(
                     imageSize: imageSize,
-                    postInfo: postCollectionList[index],
+                    // postInfo: postCollectionList[index],
+                    postInfo: Post(
+                      id: index,
+                      accountId: 1,
+                      nickname:
+                          postCollectionList[index]["username"].toString(),
+                      profile: "",
+                      title: "",
+                      content: postCollectionList[index]["content"].toString(),
+                      images: postCollectionList[index]["images"].toString(),
+                      video: postCollectionList[index]["video"].toString(),
+                      createTime: postCollectionList[index]["date"].toString(),
+                      likeCount: 0,
+                      favouriteCount: 0,
+                      commentCount: 0,
+                      isLike: postCollectionList[index]["isLike"] as bool,
+                      isFavorite:
+                          postCollectionList[index]["isFavorite"] as bool,
+                      isFollow: postCollectionList[index]["isFollow"] as bool,
+                    ),
                     backTo: widget.pageTitle,
                   ),
                 );
@@ -125,7 +146,7 @@ class _PostCollectionState extends State<PostCollection> {
 }
 
 class SinglePost extends StatefulWidget {
-  final Map postInfo;
+  final Post postInfo;
   final double imageSize;
   final String backTo;
   const SinglePost(
@@ -148,10 +169,13 @@ class _SinglePostState extends State<SinglePost> {
   @override
   void initState() {
     super.initState();
-    isFollow = widget.postInfo["isFollow"];
-    isLike = widget.postInfo["isLike"];
-    isFavorite = widget.postInfo["isFavorite"];
-    imagesRawString = widget.postInfo["images"];
+    // isFollow = widget.postInfo.isFollow;
+    // TODO
+
+    isLike = widget.postInfo.isLike;
+    // isFavorite = widget.postInfo.isFavorite;
+    // TODO
+    imagesRawString = widget.postInfo.images;
     imageList = separateString(imagesRawString);
   }
 
@@ -248,6 +272,7 @@ class _SinglePostState extends State<SinglePost> {
                   postInfo: widget.postInfo,
                   needPopComment: false,
                   backTo: widget.backTo,
+                  myAccountId: -1, //TODO
                 )));
       },
       child: Container(
@@ -287,49 +312,50 @@ class _SinglePostState extends State<SinglePost> {
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
                           Text(
-                            widget.postInfo["username"],
+                            widget.postInfo.nickname,
                             maxLines: 1,
                             style: const TextStyle(
                                 fontSize: 18, fontWeight: FontWeight.w600),
                           ),
                           Text(
-                            widget.postInfo["date"],
+                            widget.postInfo.createTime,
                             style: const TextStyle(
                                 fontSize: 12, color: Colors.black54),
                           )
                         ]),
                   ),
                 ),
-                // 关注按键
-                TextButton(
-                    onPressed: () {
-                      setState(() {
-                        isFollow = !isFollow;
-                      });
-                    },
-                    style: ButtonStyle(
-                      backgroundColor:
-                          MaterialStateProperty.resolveWith((states) {
-                        if (states.contains(MaterialState.pressed)) {
-                          return const Color.fromARGB(255, 210, 187, 248);
-                        }
-                        return const Color.fromARGB(255, 248, 199, 246);
-                      }),
-                    ),
-                    child: Text(isFollow ? "取消关注" : "关注"))
+                // 关注按键 // TODO：可以删除，自己的帖子不显示关注按键，不能自己关注自己
+                /* TextButton(
+                  onPressed: () {
+                    setState(() {
+                      isFollow = !isFollow;
+                    });
+                  },
+                  style: ButtonStyle(
+                    backgroundColor:
+                        MaterialStateProperty.resolveWith((states) {
+                      if (states.contains(MaterialState.pressed)) {
+                        return const Color.fromARGB(255, 210, 187, 248);
+                      }
+                      return const Color.fromARGB(255, 248, 199, 246);
+                    }),
+                  ),
+                  child: Text(isFollow ? "取消关注" : "关注"),
+                ), */
               ],
             ),
             // 文本内容
             Padding(
               padding: const EdgeInsets.only(top: 10, left: 3),
               child: Text(
-                widget.postInfo["content"],
+                widget.postInfo.content,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
             // 图片
-            widget.postInfo["images"] != ""
+            widget.postInfo.images != ""
                 ? Padding(
                     padding: const EdgeInsets.only(top: 10),
                     child: multipleImages(
@@ -342,11 +368,11 @@ class _SinglePostState extends State<SinglePost> {
                     width: 0,
                   ),
             // 视频
-            widget.postInfo["video"] != ""
+            widget.postInfo.video != ""
                 ? Padding(
                     padding: const EdgeInsets.only(top: 10),
                     child: VideoPlayerScreen(
-                      videoLink: widget.postInfo["video"],
+                      videoLink: widget.postInfo.video,
                       enlarge: false,
                       fullscreen: false,
                     ),
@@ -400,7 +426,7 @@ class _SinglePostState extends State<SinglePost> {
                             builder: (context) => DetailedPost(
                                   postInfo: widget.postInfo,
                                   needPopComment: true,
-                                  backTo: widget.backTo,
+                                  backTo: widget.backTo, myAccountId: -1, //TODO
                                 )));
                       },
                       child: Row(

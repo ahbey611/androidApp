@@ -49,6 +49,7 @@ dependencies:
   uuid: ^4.3.3
   image_picker: ^1.0.7
   provider: ^6.1.2
+  modal_bottom_sheet: ^2.1.2
 
 dev_dependencies:
   flutter_test:

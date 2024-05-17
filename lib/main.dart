@@ -3,15 +3,16 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'router/router.dart';
 import './homePages/chat/chat.dart';
+import './provider/post.dart';
+import './provider/comment.dart';
 
 void main() {
   runApp(
-    MyApp(),
-    /* ChangeNotifierProvider(
-      create: (context) => ChatUsersProvider(),
+      /* ChangeNotifierProvider(
+      create: (context) => PostNotifier(),
       child: MyApp(),
     ), */
-  );
+      MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -21,7 +22,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     SystemChrome.setPreferredOrientations(
         [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
-    return MaterialApp(
+    /* return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Flutter Login Demo',
       theme: ThemeData(
@@ -29,6 +30,21 @@ class MyApp extends StatelessWidget {
       ),
       initialRoute: "login",
       onGenerateRoute: onGenerateRoute,
+    ); */
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => PostNotifier()),
+        ChangeNotifierProvider(create: (context) => CommentNotifier()),
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'Flutter Login Demo',
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+        ),
+        initialRoute: "login",
+        onGenerateRoute: onGenerateRoute,
+      ),
     );
   }
 }

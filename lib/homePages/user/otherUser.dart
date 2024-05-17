@@ -83,15 +83,6 @@ class _OtherUserPageState extends State<OtherUserPage> {
                   );
                 });
           },
-          /* child: Container(
-            width: defaultFixedWidth ? 75 : phoneWidth * 0.1,
-            height: defaultFixedWidth ? 75 : phoneWidth * 0.1,
-            child: CircleAvatar(
-              radius: defaultFixedWidth ? 35 : phoneWidth * 0.05,
-              backgroundImage: CachedNetworkImageProvider(profile),
-              backgroundColor: Colors.transparent,
-            ),
-           */
           child: CircleAvatar(
             radius: defaultFixedWidth ? 35 : phoneWidth * 0.05,
             backgroundColor: Colors.transparent,
