@@ -850,6 +850,7 @@ class _DetailedPostState extends State<DetailedPost> {
                     ? Padding(
                         padding: const EdgeInsets.only(top: 10),
                         child: VideoPlayerScreen(
+                          fromFile: false,
                           videoLink: '$ip/static/${widget.postInfo.video}',
                           enlarge: false,
                           fullscreen: false,
