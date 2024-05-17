@@ -372,7 +372,8 @@ class _SinglePostState extends State<SinglePost> {
                 ? Padding(
                     padding: const EdgeInsets.only(top: 10),
                     child: VideoPlayerScreen(
-                      videoLink: widget.postInfo.video,
+                      fromFile: false,
+                      videoLink: widget.postInfo["video"],
                       enlarge: false,
                       fullscreen: false,
                     ),
