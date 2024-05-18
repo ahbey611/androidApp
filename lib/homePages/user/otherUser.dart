@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:photo_view/photo_view.dart';
+import '../user/post_collection.dart';
 
 class OtherUserPage extends StatefulWidget {
   const OtherUserPage({super.key});
@@ -14,6 +15,75 @@ class _OtherUserPageState extends State<OtherUserPage> {
   double phoneHeight = 0.0;
   bool isFollowed = false;
   int gender_ = 1;
+  //var postList = [];
+  var postList = [
+    {
+      "content": "测试一些发帖内容这些是用户的发帖内容",
+      "username": "同一个人",
+      "date": "2024-03-27",
+      "images": "https://storage.googleapis.com/pod_public/1300/122734.jpg",
+      "video": "",
+      "isFollow": true,
+      "isLike": true,
+      "isFavorite": true,
+    },
+    {
+      "content":
+          "我最近发现了一种高效的学习方法，能够帮助我更好地掌握知识。我想和大家分享一下，也希望能够听听大家的建议和意见。欢迎大家踊跃参与讨论！",
+      "username": "同一个人",
+      "date": "2024-03-26",
+      "images": "",
+      "video": "",
+      "isFollow": true,
+      "isLike": true,
+      "isFavorite": true,
+    },
+    {
+      "content": "这边主要测试多张照片的呈现啦看看效果怎么样",
+      "username": "同一个人",
+      "date": "2024-03-22",
+      "images":
+          "https://www.thespruceeats.com/thmb/kpuMkqk0BhGMTuSENf_IebbHu1s=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/strawberry-ice-cream-10-0b3e120e7d6f4df1be3c57c17699eb2c.jpg;https://cdn.loveandlemons.com/wp-content/uploads/2021/06/summer-desserts.jpg",
+      "video": "",
+      "isFollow": true,
+      "isLike": true,
+      "isFavorite": true,
+    },
+    {
+      "content": "今天校园餐厅推出了一系列新菜品，想要邀请大家一起来参加试吃活动！欢迎大家在活动结束后分享你们的试吃体验和感受。",
+      "username": "同一个人",
+      "date": "2024-03-14",
+      "images":
+          "https://sophieng94.files.wordpress.com/2014/11/366.jpg;https://recipes.net/wp-content/uploads/2024/02/what-is-satay-chicken-1709209061.jpg;https://www.chilipeppermadness.com/wp-content/uploads/2023/06/Gochujang-Noodles-Recipe-SQ-500x500.jpg;https://shortgirltallorder.com/wp-content/uploads/2020/03/veggie-fried-rice-square-4.jpg;https://sweetsavoryandsteph.com/wp-content/uploads/2020/09/IMG_2664-scaled.jpg",
+      "video": "",
+      "isFollow": true,
+      "isLike": true,
+      "isFavorite": true,
+    },
+    {
+      "content":
+          "大家新学期快开始了，让我们一起为我们的校园活动出出主意吧！有没有什么有趣的活动想法？或者是你对以往的活动有什么改进意见？欢迎大家踊跃发言！",
+      "username": "同一个人",
+      "date": "2024-03-20",
+      "images": "",
+      "video":
+          "https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4",
+      "isFollow": true,
+      "isLike": true,
+      "isFavorite": true,
+    },
+    {
+      "content":
+          "大家来分享一下宿舍生活中的趣事、困扰和解决办法吧！有没有什么有趣的宿舍活动？或者是如何在宿舍里和室友相处愉快的小技巧？让我们一起来交流吧！",
+      "username": "同一个人",
+      "date": "2024-03-18",
+      "images": "",
+      "video": "",
+      "isFollow": true,
+      "isLike": true,
+      "isFavorite": true,
+    },
+  ];
 
   // 自定义AppBar，固定在顶部，只有返回按钮，颜色透明
   Widget getHeader() {
@@ -49,9 +119,9 @@ class _OtherUserPageState extends State<OtherUserPage> {
           "https://wx4.sinaimg.cn/mw690/005HvLNqgy1hl9n68r7pqj31001betiy.jpg"]) {
     bool defaultFixedWidth = phoneWidth * 0.05 < 35;
     List<Color> borderColors = [
-      Color.fromARGB(172, 155, 155, 155),
-      Color.fromARGB(172, 115, 191, 253),
-      Color.fromRGBO(253, 115, 242, 0.675),
+      const Color.fromARGB(172, 155, 155, 155),
+      const Color.fromARGB(172, 115, 191, 253),
+      const Color.fromRGBO(253, 115, 242, 0.675),
     ];
     return Stack(
       alignment: Alignment.center,
@@ -106,15 +176,15 @@ class _OtherUserPageState extends State<OtherUserPage> {
       String nickname, int gender, String grade, String department) {
     double width = phoneWidth * 0.05 < 35 ? 85 : phoneWidth * 0.1 + 15;
     List<Color> departmentColors = [
-      Color.fromARGB(169, 189, 189, 189),
-      Color.fromARGB(199, 191, 250, 252),
+      const Color.fromARGB(169, 189, 189, 189),
+      const Color.fromARGB(255, 191, 252, 250),
       const Color.fromRGBO(240, 207, 255, 1)
       // const Color.fromRGBO(254, 207, 241, 0.65),
     ];
 
     List<Color> gradeColors = [
-      Color.fromARGB(183, 160, 163, 161),
-      Color.fromARGB(188, 141, 221, 255),
+      const Color.fromARGB(183, 160, 163, 161),
+      const Color.fromARGB(255, 153, 223, 251),
       const Color.fromRGBO(254, 207, 241, 0.65),
     ];
 
@@ -379,76 +449,48 @@ class _OtherUserPageState extends State<OtherUserPage> {
 
   // 获取用户贴子
   Widget getPostWidget() {
+    var imageSize = (phoneWidth - 70) * 0.32;
     return Container(
-      width: phoneWidth,
-      constraints: BoxConstraints(
-        minHeight: phoneHeight * 0.7,
-      ),
-      decoration: const BoxDecoration(
-        // color: const Color.fromARGB(255, 187, 187, 187).withOpacity(0.8),
-        color: Colors.white,
-        // 上面的左右两个角设置为圆角
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(25),
-          topRight: Radius.circular(25),
+        alignment: Alignment.topCenter,
+        width: phoneWidth,
+        constraints: BoxConstraints(
+          minHeight: phoneHeight * 0.7,
         ),
-      ),
-      child: Column(
-        children: [
-          const SizedBox(
-            height: 15,
+        decoration: const BoxDecoration(
+          // color: const Color.fromARGB(255, 187, 187, 187).withOpacity(0.8),
+          //color: Colors.white,
+          //color: Colors.transparent,
+          // gradient: LinearGradient(colors: [
+          //   Color.fromARGB(146, 209, 108, 253),
+          //   Color.fromARGB(255, 253, 184, 253)
+          // ], begin: Alignment.topCenter, end: Alignment.bottomCenter),
+          // 上面的左右两个角设置为圆角
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(25),
+            topRight: Radius.circular(25),
           ),
-          Container(
-            width: phoneWidth * 0.9,
-            height: 100,
-            decoration: BoxDecoration(
-              color: Color.fromARGB(255, 241, 160, 237),
-              borderRadius: BorderRadius.circular(25),
-            ),
-          ),
-          Container(
-            height: 100,
-            width: phoneWidth * 0.9,
-            decoration: BoxDecoration(
-              color: Color.fromARGB(255, 139, 195, 241),
-              borderRadius: BorderRadius.circular(25),
-            ),
-          ),
-          Container(
-            width: phoneWidth * 0.9,
-            height: 100,
-            decoration: BoxDecoration(
-              color: Color.fromARGB(255, 241, 160, 237),
-              borderRadius: BorderRadius.circular(25),
-            ),
-          ),
-          Container(
-            height: 100,
-            width: phoneWidth * 0.9,
-            decoration: BoxDecoration(
-              color: Color.fromARGB(255, 139, 195, 241),
-              borderRadius: BorderRadius.circular(25),
-            ),
-          ),
-          Container(
-            width: phoneWidth * 0.9,
-            height: 100,
-            decoration: BoxDecoration(
-              color: Color.fromARGB(255, 241, 160, 237),
-              borderRadius: BorderRadius.circular(25),
-            ),
-          ),
-          Container(
-            height: 100,
-            width: phoneWidth * 0.9,
-            decoration: BoxDecoration(
-              color: Color.fromARGB(255, 139, 195, 241),
-              borderRadius: BorderRadius.circular(25),
-            ),
-          ),
-        ],
-      ),
-    );
+        ),
+        child: postList.isNotEmpty
+            ? ListView.builder(
+                shrinkWrap: true,
+                itemCount: postList.length,
+                itemBuilder: (context, index) {
+                  return Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 5, 20, 10),
+                    child: SinglePost(
+                        imageSize: imageSize,
+                        postInfo: postList[index],
+                        backTo: ""),
+                  );
+                },
+              )
+            : const Padding(
+                padding: EdgeInsets.all(30),
+                child: Divider(
+                  color: Colors.black,
+                  thickness: 0.5,
+                ),
+              ));
   }
 
   @override
@@ -479,11 +521,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
             getSignatureWidget("sffdfsdfdsfdfddfdf"),
             getButtonWidget(100, 200, 30),
             Expanded(
-              child: ListView(
-                children: [
-                  getPostWidget(),
-                ],
-              ),
+              child: getPostWidget(),
             ),
           ],
         ),

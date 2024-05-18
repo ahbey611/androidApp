@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
-// import '../../component/footer.dart';
-// import '../../component/header.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter/services.dart';
 import 'personal_info.dart';
 import 'post_collection.dart';
+import '../../account/token.dart';
+import '../../api/api.dart';
 
 class UserPage extends StatefulWidget {
   const UserPage({super.key});
@@ -12,28 +15,39 @@ class UserPage extends StatefulWidget {
 }
 
 class _UserPageState extends State<UserPage> {
-  var userList = [
-    {
-      "username": "用户A",
-      "profile":
-          "https://k.sinaimg.cn/n/sinakd20106/560/w1080h1080/20240302/4b5e-6347ebbf001cd7e26a2ab0579c54085b.jpg/w700d1q75cms.jpg"
-    },
-    {
-      "username": "用户B",
-      "profile":
-          "https://k.sinaimg.cn/n/sinakd20106/560/w1080h1080/20240302/4b5e-6347ebbf001cd7e26a2ab0579c54085b.jpg/w700d1q75cms.jpg"
-    },
-    {
-      "username": "用户C",
-      "profile":
-          "https://k.sinaimg.cn/n/sinakd20106/560/w1080h1080/20240302/4b5e-6347ebbf001cd7e26a2ab0579c54085b.jpg/w700d1q75cms.jpg"
-    },
-    {
-      "username": "用户D",
-      "profile":
-          "https://k.sinaimg.cn/n/sinakd20106/560/w1080h1080/20240302/4b5e-6347ebbf001cd7e26a2ab0579c54085b.jpg/w700d1q75cms.jpg"
-    }
-  ];
+  // =========================== Variables ===========================
+  Map accountInfo = {};
+  bool useNetworkPic = false;
+  List<String> schoolList = [];
+  List<String> gradeMapping = const ["学生", "学生", "教职人员", "校友"];
+
+  // =========================== Widgets ===========================
+  Widget profilePic() {
+    return GestureDetector(
+      onTap: () {},
+      child: CircleAvatar(
+        radius: 41,
+        backgroundColor: const Color.fromARGB(255, 249, 208, 243),
+        child: CircleAvatar(
+          radius: 38,
+          backgroundColor: Colors.white,
+          child: useNetworkPic
+              ? CircleAvatar(
+                  radius: 35,
+                  backgroundColor: Colors.white,
+                  backgroundImage:
+                      NetworkImage("$ip/static/${accountInfo["profile"]}"),
+                )
+              : const CircleAvatar(
+                  radius: 35,
+                  backgroundColor: Colors.white,
+                  backgroundImage: AssetImage("assets/images/white.png"),
+                ),
+        ),
+      ),
+    );
+  }
+
   // 帖子、关注、粉丝的按钮
   Widget upperButton(String buttonTitle, int num) {
     return Expanded(
@@ -89,8 +103,12 @@ class _UserPageState extends State<UserPage> {
           switch (buttonTitle) {
             case "个人资料":
               {
-                Navigator.of(context).push(MaterialPageRoute(
-                    builder: (context) => const PersonalInfo()));
+                Navigator.of(context)
+                    .push(MaterialPageRoute(
+                        builder: (context) => const PersonalInfo()))
+                    .then((value) {
+                  getAccountInfo();
+                });
               }
               break;
 
@@ -134,6 +152,47 @@ class _UserPageState extends State<UserPage> {
     );
   }
 
+  // =========================== API =================================
+
+  // 获取个人资料，存在accountInfo
+  void getAccountInfo() async {
+    var token = await storage.read(key: 'token');
+    print("API: getAccountInfo");
+    print(token);
+
+    try {
+      final dio = Dio();
+      final headers = {
+        'Authorization': 'Bearer $token',
+      };
+
+      final response = await dio.get(
+        '$ip/api/account/get-account-info',
+        options: Options(headers: headers),
+      );
+
+      if (response.statusCode == 200) {
+        print("API success: getAccountInfo");
+        print(response.data);
+        setState(() {
+          accountInfo = response.data["data"];
+          useNetworkPic = accountInfo["profile"] != null;
+        });
+      }
+    } catch (e) {
+      print("Exception occurred: $e");
+    }
+  }
+
+  // =========================== Functions ===========================
+
+  // 从文件导入院系列表
+  Future<void> loadCourseList() async {
+    String courses = await rootBundle.loadString('assets/files/courses.txt');
+    List<String> courseList = courses.split(' ');
+    schoolList = courseList;
+  }
+
   // 弹出用户列表
   void showUserList(String title) {
     showModalBottomSheet(
@@ -152,21 +211,28 @@ class _UserPageState extends State<UserPage> {
                   ),
                 ),
               ),
-              Expanded(
-                child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: userList.length,
-                    itemBuilder: (context, index) {
-                      return ListTile(
-                        title: Text(userList[index]["username"]!),
-                        onTap: () {},
-                      );
-                    }),
-              ),
+              // Expanded(
+              //   child: ListView.builder(
+              //       shrinkWrap: true,
+              //       itemCount: userList.length,
+              //       itemBuilder: (context, index) {
+              //         return ListTile(
+              //           title: Text(userList[index]["username"]!),
+              //           onTap: () {},
+              //         );
+              //       }),
+              // ),
               const SizedBox(height: 50)
             ],
           );
         });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    loadCourseList();
+    getAccountInfo();
   }
 
   @override
@@ -211,33 +277,20 @@ class _UserPageState extends State<UserPage> {
                   Column(
                     children: [
                       // 用户头像
-                      const CircleAvatar(
-                        radius: 41,
-                        backgroundColor: Color.fromARGB(255, 249, 208, 243),
-                        child: CircleAvatar(
-                          radius: 38,
-                          backgroundColor: Colors.white,
-                          child: CircleAvatar(
-                            radius: 35,
-                            backgroundColor: Colors.white,
-                            backgroundImage: NetworkImage(
-                                "https://k.sinaimg.cn/n/sinakd20106/560/w1080h1080/20240302/4b5e-6347ebbf001cd7e26a2ab0579c54085b.jpg/w700d1q75cms.jpg"),
-                          ),
-                        ),
-                      ),
+                      profilePic(),
                       // 用户资料
                       Column(
                         children: [
-                          const Text(
-                            "用户名",
-                            style: TextStyle(
+                          Text(
+                            accountInfo["username"] ?? "用户名",
+                            style: const TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
                                 height: 2),
                           ),
-                          const Text(
-                            "用户的个人签名",
-                            style: TextStyle(
+                          Text(
+                            accountInfo["signature"] ?? "（个性签名）",
+                            style: const TextStyle(
                               fontSize: 16,
                               color: Colors.black54,
                             ),
@@ -253,7 +306,9 @@ class _UserPageState extends State<UserPage> {
                                     color: const Color.fromARGB(
                                         255, 244, 192, 253),
                                     borderRadius: BorderRadius.circular(15)),
-                                child: const Text("所属院系"),
+                                child: Text(accountInfo["department"] != null
+                                    ? schoolList[accountInfo["department"]]
+                                    : ""),
                               ),
                               const SizedBox(width: 5),
                               Container(
@@ -263,7 +318,16 @@ class _UserPageState extends State<UserPage> {
                                     color: const Color.fromARGB(
                                         255, 249, 210, 246),
                                     borderRadius: BorderRadius.circular(15)),
-                                child: const Text("学生"),
+                                child: Text(accountInfo["grade"] != null
+                                    ? gradeMapping[accountInfo["grade"]]
+                                    : ""),
+                              ),
+                              const SizedBox(width: 5),
+                              Image.asset(
+                                accountInfo["gender"] != 2
+                                    ? "assets/icons/male.png"
+                                    : "assets/icons/female.png",
+                                height: 20,
                               )
                             ],
                           )

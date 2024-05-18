@@ -6,7 +6,7 @@ import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:video_player/video_player.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:camera/camera.dart';
-//import 'package:duration_picker/duration_picker.dart';
+import "package:dio/dio.dart";
 import '../../component/header.dart';
 import '../home/gallery.dart';
 import '../home/video.dart';
