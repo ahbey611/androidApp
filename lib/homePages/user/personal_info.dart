@@ -82,7 +82,8 @@ class _PersonalInfoState extends State<PersonalInfo> {
               ? CircleAvatar(
                   radius: 45,
                   backgroundColor: Colors.white,
-                  backgroundImage: NetworkImage("$ip/static/$profilePicPath"),
+                  backgroundImage:
+                      NetworkImage("$staticIp/static/$profilePicPath"),
                 )
               : (useFilePic
                   ? CircleAvatar(

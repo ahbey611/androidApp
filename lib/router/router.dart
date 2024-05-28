@@ -27,7 +27,7 @@ Map routes = {
   '/chatRoom': (context, {arguments}) => ChatRoom(arguments: arguments),
   '/post': (context) => const PostPage(),
   'user2': (context) => const UserPage2(),
-  'otherUser': (context) => const OtherUserPage(),
+  //'otherUser': (context) => const OtherUserPage(),
   'chatDraft': (context) => const ChatPage2(),
 };
 

@@ -197,6 +197,97 @@ class PostNotifier extends ChangeNotifier {
     }
   }
 
+  // 获取某人的帖子列表
+  Future<void> fetchUserPostList(int accountId, [String keyword = ""]) async {
+    if (isFetching) return;
+
+    if (hasMorePosts == false) return;
+
+    isFetching = true;
+    newPosts.clear();
+
+    debugPrint("获取账号$accountId的帖子列表：第$page页， $size 条");
+
+    final dio = Dio();
+    token = await storage.read(key: 'token');
+    dio.options.headers["Authorization"] = "Bearer $token";
+
+    Map<String, dynamic> param = {
+      "page": page,
+      "size": size,
+    };
+    param["otherAccountId"] = accountId;
+    debugPrint(param.toString());
+
+    try {
+      Response response = await dio.post("$ip/api/post/get-by-time/other",
+          queryParameters: param);
+
+      // 成功获取帖子
+      if (response.data["code"] == 200) {
+        var newPostList = response.data["data"];
+
+        // 有帖子
+        if (newPostList.isNotEmpty) {
+          debugPrint("获取账号$accountId的帖子列表成功：第$page页， ${newPostList.length} 条");
+          page++;
+          postJson = newPostList;
+          for (var post in postJson) {
+            posts.add(Post(
+              id: post["id"],
+              accountId: post["accountId"],
+              nickname: post["nickname"],
+              profile: post["profile"],
+              title: post["title"],
+              content: post["content"],
+              images: post["images"],
+              video: post["video"],
+              createTime: post["createTime"],
+              likeCount: post["likeCount"],
+              favouriteCount: post["favouriteCount"],
+              commentCount: post["commentCount"],
+              isLike: post["isLike"] == 1 ? true : false,
+              isFavorite: post["isFavorite"] == 1 ? true : false,
+              isFollow: post["isFollow"] == 1 ? true : false,
+            ));
+            newPosts.add(Post(
+              id: post["id"],
+              accountId: post["accountId"],
+              nickname: post["nickname"],
+              profile: post["profile"],
+              title: post["title"],
+              content: post["content"],
+              images: post["images"],
+              video: post["video"],
+              createTime: post["createTime"],
+              likeCount: post["likeCount"],
+              favouriteCount: post["favouriteCount"],
+              commentCount: post["commentCount"],
+              isLike: post["isLike"] == 1 ? true : false,
+              isFavorite: post["isFavorite"] == 1 ? true : false,
+              isFollow: post["isFollow"] == 1 ? true : false,
+            ));
+          }
+          notifyListeners();
+        } // 没有更多帖子
+        else {
+          debugPrint("没有更多帖子");
+          hasMorePosts = false;
+        }
+      }
+      // 获取失败
+      else {
+        debugPrint("获取帖子列表失败");
+      }
+    } on Dio catch (_, e) {
+      hasMorePosts = false; // false
+      debugPrint("$ip/api/post/get-by-time/other 获取失败");
+      debugPrint(e.toString());
+    } finally {
+      isFetching = false;
+    }
+  }
+
   // 设置帖子状态
   Future<bool> setPostStatus(int id, PostOperation op) async {
     final dio = Dio();
@@ -273,6 +364,20 @@ class PostNotifier extends ChangeNotifier {
     hasMorePosts = true;
     notifyListeners();
     await fetchPostList(filterType);
+    isRefreshing = false;
+  }
+
+  // 重新获取某人的帖子列表
+  Future<void> refreshUserPostList(int accountId) async {
+    if (isRefreshing) return;
+    isRefreshing = true;
+    page = 1;
+    posts.clear();
+    newPosts.clear();
+    postJson.clear();
+    hasMorePosts = true;
+    notifyListeners();
+    await fetchUserPostList(accountId);
     isRefreshing = false;
   }
 
@@ -432,5 +537,17 @@ class PostNotifier extends ChangeNotifier {
 
   // ===========其他==============
 
-  Post getPostById(int id) => posts.firstWhere((post) => post.id == id);
+  void setPageNSize(int p, int s) {
+    page = p;
+    size = s;
+  }
+
+  Post getPostById(int id) {
+    debugPrint("获取帖子$id, ${posts.length}条");
+    debugPrint("当前存在帖子id：");
+    for (var post in posts) {
+      debugPrint("id: ${post.id}");
+    }
+    return posts.firstWhere((post) => post.id == id);
+  }
 }

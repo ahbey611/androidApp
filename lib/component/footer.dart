@@ -38,10 +38,12 @@ class _MainPagesState extends State<MainPages> {
 
     _pages = const [HomePage(), ChatPage(), PostPage(), UserPage()];
 
-    /* if (widget.arguments.containsKey('setToArticlePage')) {
+    if (widget.arguments.containsKey('setToUserPage')) {
       setState(() {
-        _currentIndex = 1;
+        _currentIndex = 3;
       });
+    }
+    /*
     } else if (widget.arguments.containsKey('setToUserPage')) {
       setState(() {
         _currentIndex = 4;

@@ -579,6 +579,10 @@ class _SinglePostBlockState extends State<SinglePostBlock> {
         child: ListTile(
           contentPadding: const EdgeInsets.fromLTRB(8, 0, 8, 0),
           onTap: () {
+            debugPrint("pressed post with id: ${widget.postInfo.id}");
+            for (var post in postNotifier.posts) {
+              debugPrint("post id: ${post.id}");
+            }
             Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (context) => DetailedPost(
@@ -586,6 +590,7 @@ class _SinglePostBlockState extends State<SinglePostBlock> {
                   needPopComment: false,
                   backTo: "首页",
                   myAccountId: widget.myAccountId,
+                  postNotifier: postNotifier,
                 ),
               ),
             );
@@ -619,7 +624,7 @@ class _SinglePostBlockState extends State<SinglePostBlock> {
                           AspectRatio(
                             aspectRatio: 1.0,
                             child: CachedNetworkImage(
-                              imageUrl: "$ip/static/${imageList[0]}",
+                              imageUrl: "$staticIp/static/${imageList[0]}",
                               fit: BoxFit.cover,
                               placeholder: (context, url) => Center(
                                 child: LoadingAnimationWidget.staggeredDotsWave(
@@ -657,7 +662,8 @@ class _SinglePostBlockState extends State<SinglePostBlock> {
                         alignment: Alignment.center,
                         children: [
                           VideoPreview(
-                            videoUrl: '$ip/static/${widget.postInfo.video}',
+                            videoUrl:
+                                '$staticIp/static/${widget.postInfo.video}',
                             // videoUrl:
                             // 'http://60.205.143.180:8080/static/1713954727612test.mp4',
                             // videoUrl:
