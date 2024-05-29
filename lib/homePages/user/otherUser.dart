@@ -304,7 +304,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
                 (accountInfo["department"] != null &&
                         accountInfo["department"] < schoolList.length)
                     ? schoolList[accountInfo["department"]]
-                    : "",
+                    : schoolList[0],
                 style: const TextStyle(
                   fontSize: 12,
                   fontFamily: "inter",
@@ -350,7 +350,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
   //         "https://wx4.sinaimg.cn/mw690/005HvLNqgy1hl9n68r7pqj31001betiy.jpg"]) {
   Widget getInfoWidget() {
     return Padding(
-      padding: EdgeInsets.all(20),
+      padding: const EdgeInsets.all(20),
       //padding: EdgeInsets.fromLTRB(phoneWidth * 0.05, 25, phoneWidth * 0.05, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
