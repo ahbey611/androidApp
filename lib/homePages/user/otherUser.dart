@@ -1,11 +1,17 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/services.dart';
 import 'package:photo_view/photo_view.dart';
+import 'package:tsinghua/account/token.dart';
+import 'package:tsinghua/api/api.dart';
+import 'package:tsinghua/provider/post.dart';
 import '../user/post_collection.dart';
 import '../../provider/post.dart';
 
 class OtherUserPage extends StatefulWidget {
-  const OtherUserPage({super.key});
+  final int accountId;
+  const OtherUserPage({super.key, required this.accountId});
 
   @override
   State<OtherUserPage> createState() => _OtherUserPageState();
@@ -16,135 +22,128 @@ class _OtherUserPageState extends State<OtherUserPage> {
   double phoneHeight = 0.0;
   bool isFollowed = false;
   int gender_ = 1;
-  //var postList = [];
-  var postList = [
-    {
-      "id": 1,
-      "content": "测试一些发帖内容这些是用户的发帖内容",
-      "accountId": 5,
-      "title": "这是一个标题",
-      "nickname": "同一个人",
-      "createTime": "2024-03-27",
-      "profile":
-          "https://wx4.sinaimg.cn/mw690/005HvLNqgy1hl9n68r7pqj31001betiy.jpg",
-      "images": "https://storage.googleapis.com/pod_public/1300/122734.jpg",
-      "video": "",
-      "likeCount": 10,
-      "commentCount": 5,
-      "favouriteCount": 1,
-      "isFollow": true,
-      "isLike": true,
-      "isFavorite": true,
-      "isSelf": false,
-    },
-    {
-      "id": 2,
-      "content":
-          "我最近发现了一种高效的学习方法，能够帮助我更好地掌握知识。我想和大家分享一下，也希望能够听听大家的建议和意见。欢迎大家踊跃参与讨论！",
-      "accountId": 5,
-      "title": "这是一个标题",
-      "nickname": "同一个人",
-      "profile":
-          "https://wx4.sinaimg.cn/mw690/005HvLNqgy1hl9n68r7pqj31001betiy.jpg",
-      "createTime": "2024-03-26",
-      "images": "",
-      "video": "",
-      "likeCount": 10,
-      "commentCount": 5,
-      "favouriteCount": 1,
-      "isFollow": true,
-      "isLike": true,
-      "isFavorite": true,
-      "isSelf": false,
-    },
-    {
-      "id": 3,
-      "content": "这边主要测试多张照片的呈现啦看看效果怎么样",
-      "accountId": 5,
-      "title": "这是一个标题",
-      "nickname": "同一个人",
-      "profile":
-          "https://wx4.sinaimg.cn/mw690/005HvLNqgy1hl9n68r7pqj31001betiy.jpg",
-      "createTime": "2024-03-22",
-      "images":
-          "https://www.thespruceeats.com/thmb/kpuMkqk0BhGMTuSENf_IebbHu1s=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/strawberry-ice-cream-10-0b3e120e7d6f4df1be3c57c17699eb2c.jpg;https://cdn.loveandlemons.com/wp-content/uploads/2021/06/summer-desserts.jpg",
-      "video": "",
-      "likeCount": 10,
-      "commentCount": 5,
-      "favouriteCount": 1,
-      "isFollow": true,
-      "isLike": true,
-      "isFavorite": true,
-      "isSelf": false,
-    },
-    {
-      "id": 4,
-      "content": "今天校园餐厅推出了一系列新菜品，想要邀请大家一起来参加试吃活动！欢迎大家在活动结束后分享你们的试吃体验和感受。",
-      "accountId": 5,
-      "title": "这是一个标题",
-      "nickname": "同一个人",
-      "profile":
-          "https://wx4.sinaimg.cn/mw690/005HvLNqgy1hl9n68r7pqj31001betiy.jpg",
-      "createTime": "2024-03-14",
-      "images":
-          "https://sophieng94.files.wordpress.com/2014/11/366.jpg;https://recipes.net/wp-content/uploads/2024/02/what-is-satay-chicken-1709209061.jpg;https://www.chilipeppermadness.com/wp-content/uploads/2023/06/Gochujang-Noodles-Recipe-SQ-500x500.jpg;https://shortgirltallorder.com/wp-content/uploads/2020/03/veggie-fried-rice-square-4.jpg;https://sweetsavoryandsteph.com/wp-content/uploads/2020/09/IMG_2664-scaled.jpg",
-      "video": "",
-      "likeCount": 10,
-      "commentCount": 5,
-      "favouriteCount": 1,
-      "isFollow": true,
-      "isLike": true,
-      "isFavorite": true,
-      "isSelf": false,
-    },
-    {
-      "id": 5,
-      "content":
-          "大家新学期快开始了，让我们一起为我们的校园活动出出主意吧！有没有什么有趣的活动想法？或者是你对以往的活动有什么改进意见？欢迎大家踊跃发言！",
-      "accountId": 5,
-      "title": "这是一个标题",
-      "nickname": "同一个人",
-      "createTime": "2024-03-20",
-      "profile":
-          "https://wx4.sinaimg.cn/mw690/005HvLNqgy1hl9n68r7pqj31001betiy.jpg",
-      "images": "",
-      "video":
-          "https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4",
-      "likeCount": 10,
-      "commentCount": 5,
-      "favouriteCount": 1,
-      "isFollow": true,
-      "isLike": true,
-      "isFavorite": true,
-      "isSelf": false,
-    },
-    {
-      "id": 6,
-      "content":
-          "大家来分享一下宿舍生活中的趣事、困扰和解决办法吧！有没有什么有趣的宿舍活动？或者是如何在宿舍里和室友相处愉快的小技巧？让我们一起来交流吧！",
-      "accountId": 5,
-      "title": "这是一个标题",
-      "nickname": "同一个人",
-      "profile":
-          "https://wx4.sinaimg.cn/mw690/005HvLNqgy1hl9n68r7pqj31001betiy.jpg",
-      "createTime": "2024-03-18",
-      "images": "",
-      "video": "",
-      "likeCount": 10,
-      "commentCount": 5,
-      "favouriteCount": 1,
-      "isFollow": true,
-      "isLike": true,
-      "isFavorite": true,
-      "isSelf": false,
-    },
-  ];
+  Map accountInfo = {};
+  var followAccountList = [];
+  int followCount = 0;
+  List<String> schoolList = [];
+  List<String> gradeMapping = const ["学生", "学生", "教职人员", "校友"];
+  List<Post> postList = [];
+  PostNotifier postNotifier = PostNotifier();
+  ScrollController scrollController = ScrollController();
+  double lastPosition = 0;
+  String imageWhenEmpty = "assets/icons/no_post.png";
+  String textWhenEmpty = "暂无贴子";
+
+  // =================== API ===================
+  // 获取帖子列表
+  void fetchPostList() async {
+    await postNotifier.fetchUserPostList(widget.accountId);
+
+    if (postNotifier.posts != postList) {
+      setState(() {
+        postList = postNotifier.posts;
+      });
+    }
+  }
+
+  // 刷新帖子列表
+  void refreshPostList() async {
+    await postNotifier.refreshUserPostList(widget.accountId);
+
+    setState(() {
+      postList = postNotifier.posts;
+    });
+  }
+
+  // 获取个人资料，存在accountInfo
+  Future<void> getAccountInfo() async {
+    var token = await storage.read(key: 'token');
+    debugPrint("API: getAccountInfo");
+    debugPrint(token);
+
+    try {
+      final dio = Dio();
+      final headers = {
+        'Authorization': 'Bearer $token',
+      };
+
+      final response = await dio.get(
+        '$ip/api/account/details?otherAccountId=${widget.accountId}',
+        options: Options(headers: headers),
+      );
+
+      if (response.statusCode == 200) {
+        debugPrint("API success: getAccountInfo");
+        print(response.data["data"]);
+        accountInfo = response.data["data"];
+      } else {
+        debugPrint("API failed: getAccountInfo");
+      }
+    } catch (e) {
+      debugPrint("Exception occurred: $e");
+    }
+  }
+
+  // 获取关注列表
+  void getFollowList() async {
+    var token = await storage.read(key: 'token');
+    debugPrint("API: getFollowList");
+    debugPrint(token);
+
+    try {
+      final dio = Dio();
+      final headers = {
+        'Authorization': 'Bearer $token',
+      };
+
+      final response = await dio.get(
+        '$ip/api/follow-account/get',
+        options: Options(headers: headers),
+      );
+
+      if (response.statusCode == 200) {
+        debugPrint("API success: getFollowList");
+        print(response.data["data"]);
+        followAccountList = response.data["data"]["followAccountIds"];
+        if (followAccountList.contains(widget.accountId)) {
+          setState(() {
+            isFollowed = true;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Exception occurred: $e");
+    }
+  }
+
+  // ================== Funtion ==================
+
+  // 滚动加载
+  void _onScroll() {
+    if ((scrollController.position.pixels >=
+            scrollController.position.maxScrollExtent) &&
+        (postList.isNotEmpty)) {
+      lastPosition = scrollController.position.pixels;
+      fetchPostList();
+    }
+  }
+
+  // 从文件导入院系列表
+  Future<void> loadCourseList() async {
+    String courses = await rootBundle.loadString('assets/files/courses.txt');
+    List<String> courseList = courses.split(' ');
+    setState(() {
+      schoolList = courseList;
+    });
+  }
+
+  // ================== Widget ==================
 
   // 自定义AppBar，固定在顶部，只有返回按钮，颜色透明
   Widget getHeader() {
     return Container(
       width: phoneWidth,
-      height: 50,
+      height: 80,
       decoration: const BoxDecoration(
         color: Colors.transparent,
       ),
@@ -190,7 +189,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
             color: Colors.white,
             border: Border.fromBorderSide(
               BorderSide(
-                color: borderColors[gender_],
+                color: borderColors[accountInfo["gender"]],
                 width: 3,
               ),
             ),
@@ -204,7 +203,8 @@ class _OtherUserPageState extends State<OtherUserPage> {
                 context: context,
                 builder: (BuildContext context) {
                   return PhotoView(
-                    imageProvider: CachedNetworkImageProvider(profile),
+                    imageProvider: CachedNetworkImageProvider(
+                        "$staticIp/static/${accountInfo['profile']}"),
                   );
                 });
           },
@@ -215,7 +215,8 @@ class _OtherUserPageState extends State<OtherUserPage> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle, // 圆形的装饰
                 image: DecorationImage(
-                  image: CachedNetworkImageProvider(profile),
+                  image: CachedNetworkImageProvider(
+                      "$staticIp/static/${accountInfo['profile']}"),
                   fit: BoxFit.fitWidth, // 使用cover显示图片
                 ),
               ),
@@ -227,9 +228,10 @@ class _OtherUserPageState extends State<OtherUserPage> {
   }
 
   // 获取昵称+tag组件
-  Widget getNicknameTag(
-      String nickname, int gender, String grade, String department) {
-    double width = phoneWidth * 0.05 < 35 ? 85 : phoneWidth * 0.1 + 15;
+  // Widget getNicknameTag(
+  //     String nickname, int gender, String grade, String department) {
+  Widget getNicknameTag() {
+    //double width = phoneWidth * 0.05 < 35 ? 85 : phoneWidth * 0.1 + 15;
     List<Color> departmentColors = [
       const Color.fromARGB(169, 189, 189, 189),
       const Color.fromARGB(255, 191, 252, 250),
@@ -243,127 +245,142 @@ class _OtherUserPageState extends State<OtherUserPage> {
       const Color.fromRGBO(254, 207, 241, 0.65),
     ];
 
-    return Container(
-      constraints: BoxConstraints(maxWidth: phoneWidth * 0.9 - width - 15),
-      child: Column(
+    return
+        // Column(
+        //   //mainAxisAlignment: MainAxisAlignment.center,
+        //   //crossAxisAlignment: CrossAxisAlignment.start,
+
+        //   children: [
+        //     // 昵称
+        //     Container(
+        //       //width: phoneWidth * 0.8 - width - 15,
+        //       constraints: BoxConstraints(
+        //         minHeight: MediaQuery.of(context).size.height * 0.05,
+        //       ),
+        //       child: Text(
+        //         accountInfo['nickname'],
+        //         style: const TextStyle(
+        //           fontSize: 24,
+        //           fontWeight: FontWeight.w900,
+        //           fontFamily: "inter",
+        //         ),
+        //         textAlign: TextAlign.left,
+        //       ),
+        //     ),
+
+        //     const SizedBox(
+        //       height: 5,
+        //     ),
+
+        // 个人信息（男女+学院+年级）
+        Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 昵称
+          // 男女
+          if (accountInfo["gender"] != 0)
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: accountInfo["gender"] == 1
+                  ? Image.asset("assets/icons/male.png")
+                  : Image.asset("assets/icons/female.png"),
+            ),
+          //
+          if (accountInfo["gender"] != 0)
+            const SizedBox(
+              width: 5,
+            ),
+          // 学院
           Container(
-            width: phoneWidth * 0.8 - width - 15,
-            constraints: BoxConstraints(
-              minHeight: MediaQuery.of(context).size.height * 0.05,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(15),
+              // color: const Color.fromRGBO(240, 207, 255, 1),
+              color: departmentColors[accountInfo["gender"]],
             ),
-            child: Text(
-              nickname,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w900,
-                fontFamily: "inter",
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(10, 5, 10, 5),
+              child: Text(
+                (accountInfo["department"] != null &&
+                        accountInfo["department"] < schoolList.length)
+                    ? schoolList[accountInfo["department"]]
+                    : schoolList[0],
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontFamily: "inter",
+                ),
               ),
-              textAlign: TextAlign.left,
             ),
           ),
-
+          //
           const SizedBox(
-            height: 5,
+            width: 5,
           ),
-
-          // 个人信息（男女+学院+年级）
-          Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              // 男女
-              if (gender != 0)
-                SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: gender == 1
-                      ? Image.asset("assets/icons/male.png")
-                      : Image.asset("assets/icons/female.png"),
-                ),
-              //
-              if (gender != 0)
-                const SizedBox(
-                  width: 5,
-                ),
-              // 学院
-              Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(15),
-                  // color: const Color.fromRGBO(240, 207, 255, 1),
-                  color: departmentColors[gender],
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(10, 5, 10, 5),
-                  child: Text(
-                    department,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontFamily: "inter",
-                    ),
-                  ),
+          // 年级
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(15),
+              // color: const Color.fromRGBO(254, 207, 241, 0.65),
+              color: gradeColors[accountInfo["gender"]],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(10, 5, 10, 5),
+              child: Text(
+                accountInfo["grade"] != null
+                    ? gradeMapping[accountInfo["grade"]]
+                    : "",
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontFamily: "inter",
                 ),
               ),
-              //
-              const SizedBox(
-                width: 5,
-              ),
-              // 年级
-              Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(15),
-                  // color: const Color.fromRGBO(254, 207, 241, 0.65),
-                  color: gradeColors[gender],
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(10, 5, 10, 5),
-                  child: Text(
-                    grade,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontFamily: "inter",
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ],
+        //),
+        //],
       ),
     );
   }
 
   // 获取用户信息组件
-  Widget getInfoWidget(
-      String nickname, int gender, String grade, String department,
-      [String profile =
-          "https://wx4.sinaimg.cn/mw690/005HvLNqgy1hl9n68r7pqj31001betiy.jpg"]) {
+  // Widget getInfoWidget(
+  //     String nickname, int gender, String grade, String department,
+  //     [String profile =
+  //         "https://wx4.sinaimg.cn/mw690/005HvLNqgy1hl9n68r7pqj31001betiy.jpg"]) {
+  Widget getInfoWidget() {
     return Padding(
-      padding: EdgeInsets.fromLTRB(phoneWidth * 0.05, 25, phoneWidth * 0.05, 0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          getAvatar(),
-          const SizedBox(
-            width: 15,
-          ),
-          getNicknameTag(nickname, gender, grade, department),
-        ],
+      padding: const EdgeInsets.all(20),
+      //padding: EdgeInsets.fromLTRB(phoneWidth * 0.05, 25, phoneWidth * 0.05, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [getAvatar(), getNicknameTag()],
       ),
+      // Row(
+      //   mainAxisAlignment: MainAxisAlignment.start,
+      //   children: [
+      //     getAvatar(),
+      //     const SizedBox(
+      //       width: 15,
+      //     ),s
+      //     getNicknameTag(),
+      //     //getNicknameTag(nickname, gender, grade, department),
+      //   ],
+      // ),
     );
   }
 
   // 获取个性签名组件
-  Widget getSignatureWidget(String signature) {
+  //Widget getSignatureWidget(String signature) {
+  Widget getSignatureWidget() {
     return Padding(
       padding: EdgeInsets.fromLTRB(
           phoneWidth * 0.05, phoneHeight * 0.02, phoneWidth * 0.05, 0),
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: phoneWidth * 0.9),
         child: Text(
-          signature,
+          accountInfo['signature'] ?? "",
           style: const TextStyle(
             color: Color.fromARGB(255, 100, 100, 100),
             fontSize: 16,
@@ -488,9 +505,9 @@ class _OtherUserPageState extends State<OtherUserPage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                getCountWidget(postCount, "贴子"),
-                getCountWidget(followCount, "关注"),
-                getCountWidget(fansCount, "粉丝"),
+                getCountWidget(accountInfo['postCount'], "贴子"),
+                getCountWidget(accountInfo['followingCount'], "关注"),
+                getCountWidget(accountInfo['followerCount'], "粉丝"),
               ],
             ),
           ),
@@ -502,57 +519,85 @@ class _OtherUserPageState extends State<OtherUserPage> {
     );
   }
 
-  // 获取用户贴子
-  Widget getPostWidget() {
-    var imageSize = (phoneWidth - 70) * 0.32;
+  // 获取帖子组件
+  Widget getPostWidget(double imageSize) {
     return Container(
-        alignment: Alignment.topCenter,
-        width: phoneWidth,
-        constraints: BoxConstraints(
-          minHeight: phoneHeight * 0.7,
-        ),
-        decoration: const BoxDecoration(
-          // color: const Color.fromARGB(255, 187, 187, 187).withOpacity(0.8),
-          //color: Colors.white,
-          //color: Colors.transparent,
-          // gradient: LinearGradient(colors: [
-          //   Color.fromARGB(146, 209, 108, 253),
-          //   Color.fromARGB(255, 253, 184, 253)
-          // ], begin: Alignment.topCenter, end: Alignment.bottomCenter),
-          // 上面的左右两个角设置为圆角
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(25),
-            topRight: Radius.circular(25),
-          ),
-        ),
-        child: postList.isNotEmpty
-            ? ListView.builder(
-                shrinkWrap: true,
-                itemCount: postList.length,
-                itemBuilder: (context, index) {
-                  return Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 5, 20, 10),
-                    child: SinglePost(
-                        imageSize: imageSize,
-                        postInfo: fromJson_(postList[index]),
-                        // postInfo: null,
-                        backTo: ""),
-                  );
-                },
-              )
-            : const Padding(
-                padding: EdgeInsets.all(30),
-                child: Divider(
-                  color: Colors.black,
-                  thickness: 0.5,
+      child: postList.isEmpty
+          ? Container(
+              //height: screenHeight,
+              color: Colors.transparent,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Image.asset(
+                      imageWhenEmpty,
+                      width: 80,
+                      height: 80,
+                    ),
+                    const SizedBox(
+                      height: 10,
+                    ),
+                    Text(
+                      textWhenEmpty,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        color: Colors.black26,
+                      ),
+                    ),
+                  ],
                 ),
-              ));
+              ),
+            )
+          : Padding(
+              padding: const EdgeInsets.all(10),
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  postList.clear();
+                  refreshPostList();
+                },
+                child: ListView.builder(
+                  physics: const BouncingScrollPhysics(),
+                  //physics: const AlwaysScrollableScrollPhysics(),
+                  shrinkWrap: true,
+                  controller: scrollController,
+                  itemCount: postList.length,
+                  itemBuilder: (context, index) {
+                    debugPrint("index: $index, length: ${postList.length}");
+                    Post post = postList[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 15),
+                      child: SinglePost(
+                        selfId: -1,
+                        imageSize: imageSize,
+                        postInfo: post,
+                        backTo: "",
+                        postNotifier: postNotifier,
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    loadCourseList();
+    fetchPostList();
+    getFollowList();
   }
 
   @override
   Widget build(BuildContext context) {
     phoneWidth = MediaQuery.of(context).size.width;
     phoneHeight = MediaQuery.of(context).size.height;
+    scrollController = ScrollController(initialScrollOffset: lastPosition);
+    scrollController.addListener(_onScroll);
+    var imageSize = (phoneWidth - 50) * 0.315;
+
     return Scaffold(
       /* appBar: AppBar(
         automaticallyImplyLeading: true,
@@ -570,17 +615,40 @@ class _OtherUserPageState extends State<OtherUserPage> {
             opacity: 0.4,
           ),
         ),
-        child: Column(
-          children: [
-            getHeader(),
-            getInfoWidget("admin", gender_, "本科大三", "未设置"),
-            getSignatureWidget("sffdfsdfdsfdfddfdf"),
-            getButtonWidget(100, 200, 30),
-            Expanded(
-              child: getPostWidget(),
-            ),
-          ],
-        ),
+        child: FutureBuilder(
+            future: getAccountInfo(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.done) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    getHeader(),
+                    getAvatar(),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 10, bottom: 5),
+                      child: Text(
+                        accountInfo['nickname'],
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w900,
+                          fontFamily: "inter",
+                        ),
+                        textAlign: TextAlign.left,
+                      ),
+                    ),
+                    getNicknameTag(),
+                    getButtonWidget(100, 200, 30),
+                    Expanded(
+                      child: getPostWidget(imageSize),
+                    ),
+                  ],
+                );
+              } else {
+                return const Center(
+                  child: CircularProgressIndicator(),
+                );
+              }
+            }),
       ),
     );
   }

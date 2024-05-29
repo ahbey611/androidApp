@@ -36,9 +36,11 @@ class _PostPageState extends State<PostPage> {
                   Navigator.of(context).push(MaterialPageRoute(
                       builder: (context) => const CreatePost(
                             title: "返回发帖主页",
+                            contentTitle: "",
                             content: "",
                             images: "",
                             video: "",
+                            draftId: -1,
                           )));
                 },
                 child: const Column(

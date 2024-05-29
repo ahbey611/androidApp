@@ -579,6 +579,10 @@ class _SinglePostBlockState extends State<SinglePostBlock> {
         child: ListTile(
           contentPadding: const EdgeInsets.fromLTRB(8, 0, 8, 0),
           onTap: () {
+            debugPrint("pressed post with id: ${widget.postInfo.id}");
+            for (var post in postNotifier.posts) {
+              debugPrint("post id: ${post.id}");
+            }
             Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (context) => DetailedPost(
@@ -586,6 +590,7 @@ class _SinglePostBlockState extends State<SinglePostBlock> {
                   needPopComment: false,
                   backTo: "首页",
                   myAccountId: widget.myAccountId,
+                  postNotifier: postNotifier,
                 ),
               ),
             );

@@ -7,6 +7,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/services.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:photo_view/photo_view.dart';
+import 'package:tsinghua/component/footer.dart';
+import 'package:tsinghua/homePages/user/otherUser.dart';
 
 import '../../account/token.dart';
 import '../../api/api.dart';
@@ -266,10 +268,20 @@ class _ChatRoomState extends State<ChatRoom> {
   }
 
   // 获取头像
-  Widget getAvatar(String profile, {double radius = 18}) {
+  Widget getAvatar(String profile, int accountId, {double radius = 18}) {
     return GestureDetector(
       onTap: () {
-        Navigator.pushNamed(context, 'otherUser');
+        //Navigator.pushNamed(context, 'otherUser');
+        if (accountId != -1) {
+          Navigator.of(context).push(MaterialPageRoute(
+              builder: (context) => OtherUserPage(
+                    accountId: accountId,
+                  )));
+        } else {
+          Navigator.of(context).push(MaterialPageRoute(
+              builder: (context) =>
+                  const MainPages(arguments: {"setToUserPage": true})));
+        }
       },
       child: CircleAvatar(
         backgroundImage: NetworkImage(profile),
@@ -316,7 +328,7 @@ class _ChatRoomState extends State<ChatRoom> {
       title: Row(
         children: [
           // 头像
-          getAvatar(recvProfile, radius: 18),
+          getAvatar(recvProfile, widget.arguments["accountId"], radius: 18),
           const SizedBox(
             width: 5,
           ),
@@ -565,7 +577,8 @@ class _ChatRoomState extends State<ChatRoom> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 对方发送消息
-          if (!isSelf) getAvatar(recvProfile), // 对方头像
+          if (!isSelf)
+            getAvatar(recvProfile, widget.arguments["accountId"]), // 对方头像
 
           if (!isSelf) const SizedBox(width: 10),
 
@@ -595,7 +608,7 @@ class _ChatRoomState extends State<ChatRoom> {
           if (isSelf) const SizedBox(width: 10),
 
           // 自己发的消息
-          if (isSelf) getAvatar(myProfile), // 自己头像
+          if (isSelf) getAvatar(myProfile, -1), // 自己头像
         ],
       ),
     );
@@ -611,7 +624,8 @@ class _ChatRoomState extends State<ChatRoom> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 对方发送消息
-          if (!isSelf) getAvatar(recvProfile), // 对方头像
+          if (!isSelf)
+            getAvatar(recvProfile, widget.arguments["accountId"]), // 对方头像
 
           if (!isSelf) const SizedBox(width: 10),
 
@@ -646,7 +660,7 @@ class _ChatRoomState extends State<ChatRoom> {
           if (isSelf) const SizedBox(width: 10),
 
           // 自己发的消息
-          if (isSelf) getAvatar(myProfile), // 自己头像
+          if (isSelf) getAvatar(myProfile, -1), // 自己头像
         ],
       ),
     );

@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
-// import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 import 'package:provider/provider.dart';
-// import './modal_fit.dart';
 
 import '../../component/header.dart';
 import 'gallery.dart';
@@ -14,18 +12,21 @@ import '../../account/token.dart';
 import 'package:dio/dio.dart';
 import '../../provider/post.dart';
 import '../../provider/comment.dart';
+import '../post/create_post.dart';
 
 class DetailedPost extends StatefulWidget {
   final Post postInfo;
   final bool needPopComment;
   final String backTo;
   final int myAccountId;
+  final PostNotifier postNotifier;
   const DetailedPost({
     super.key,
     required this.postInfo,
     required this.needPopComment,
     required this.backTo,
     required this.myAccountId,
+    required this.postNotifier,
   });
 
   @override
@@ -33,6 +34,7 @@ class DetailedPost extends StatefulWidget {
 }
 
 class _DetailedPostState extends State<DetailedPost> {
+  final GlobalKey _iconButtonKey = GlobalKey();
   var postDetailsData = {};
   bool isFavorite = false;
   bool isLike = false;
@@ -51,6 +53,7 @@ class _DetailedPostState extends State<DetailedPost> {
     {"username": "用户J", "content": "一些评论。。。", "date": "2024-03-18"}
   ];
 
+  // =========================== API =================================
   // 获取帖子详情
   void getPostDetails() async {
     final dio = Dio();
@@ -125,6 +128,85 @@ class _DetailedPostState extends State<DetailedPost> {
     return false;
   }
 
+  // 删除帖子
+  void deletePost() async {
+    debugPrint("API: 开始删除id为${widget.postInfo.id}的帖子");
+    var token = await storage.read(key: 'token');
+    debugPrint("API: token: $token");
+
+    try {
+      final dio = Dio();
+      final headers = {
+        'Authorization': 'Bearer $token',
+      };
+      Map<String, dynamic> map = {};
+      map['postId'] = widget.postInfo.id;
+      FormData formData = FormData.fromMap(map);
+
+      final response = await dio.get(
+        '$ip/api/post/delete',
+        options: Options(headers: headers),
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        debugPrint("API: 删除帖子成功");
+        showSuccessDeleting();
+      } else {
+        debugPrint("API: 删除帖子失败");
+      }
+    } catch (e) {
+      debugPrint("API: 删除帖子失败");
+    }
+  }
+
+  // =========================== Function =================================
+  // 弹出发布成功提示
+  void showSuccessDeleting() {
+    String hintText = "删除成功";
+    debugPrint(hintText);
+    Navigator.pop(context);
+
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return Center(
+            child: Card(
+                color: Colors.transparent,
+                shadowColor: Colors.transparent,
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.transparent,
+                      border: Border.all(color: Colors.white, width: 2)),
+                  child: Container(
+                    padding: const EdgeInsets.all(40),
+                    decoration: const BoxDecoration(
+                        shape: BoxShape.circle, color: Colors.white),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 5),
+                          child: Text(
+                            hintText,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                              color: Color.fromARGB(255, 27, 157, 193),
+                            ),
+                          ),
+                        ),
+                        Image.asset("assets/images/success.gif", height: 80)
+                      ],
+                    ),
+                  ),
+                )),
+          );
+        });
+  }
+
   // 将图片串拆分成列表形式
   List<String> separateString(String input) {
     if (input.endsWith(';')) {
@@ -134,7 +216,7 @@ class _DetailedPostState extends State<DetailedPost> {
     result.removeWhere((element) => element.isEmpty);
     // 添加 "http://$ip/static/" 前缀
     for (int i = 0; i < result.length; ++i) {
-      result[i] = "$ip/static/${result[i]}";
+      result[i] = "$staticIp/static/${result[i]}";
     }
     return result;
   }
@@ -346,7 +428,7 @@ class _DetailedPostState extends State<DetailedPost> {
         });
   }
 
-// 弹出键盘
+  // 弹出键盘
   void showCommentKeyboard(BuildContext context, int quoteCommentId,
       int commentOwnerId, String quoteNickname /* ,Comment comment */) {
     showModalBottomSheet(
@@ -628,6 +710,85 @@ class _DetailedPostState extends State<DetailedPost> {
     );
   }
 
+  // 显示操作选项（编辑&删除）
+  void showOperationChoice() async {
+    final RenderBox button =
+        _iconButtonKey.currentContext!.findRenderObject() as RenderBox;
+    final RenderBox overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox;
+    final RelativeRect position = RelativeRect.fromRect(
+      Rect.fromPoints(
+        button.localToGlobal(Offset.zero, ancestor: overlay),
+        button.localToGlobal(button.size.bottomRight(Offset.zero),
+            ancestor: overlay),
+      ),
+      Offset.zero & overlay.size,
+    );
+
+    final result = await showMenu(
+      context: context,
+      position: position,
+      items: [
+        const PopupMenuItem<String>(
+          value: '编辑',
+          child: Text('编辑'),
+        ),
+        const PopupMenuItem<String>(
+          value: '删除',
+          child: Text('删除'),
+        ),
+      ],
+    );
+
+    if (result != null) {
+      if (result == '编辑') {
+        // 编辑帖子
+        if (mounted) {
+          Navigator.of(context).push(MaterialPageRoute(
+              builder: (context) => CreatePost(
+                    title: "编辑帖子",
+                    draftId: widget.postInfo.id,
+                    contentTitle: widget.postInfo.title,
+                    content: widget.postInfo.content,
+                    images: widget.postInfo.images,
+                    video: widget.postInfo.video,
+                  )));
+        }
+      } else {
+        // 删除帖子
+        showConfirmDialog(true);
+      }
+    }
+  }
+
+  // 确认操作
+  void showConfirmDialog(bool isDelete) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("操作确认"),
+          content: Text(isDelete ? "确定要删除帖子吗？" : "确定要编辑帖子吗？"),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                deletePost();
+              },
+              child: const Text("确定"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text("我再想想"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   void dispose() {
     commentController.dispose();
@@ -659,7 +820,8 @@ class _DetailedPostState extends State<DetailedPost> {
     var imagesRawString = widget.postInfo.images;
     List imageList = separateString(imagesRawString);
 
-    final postNotifier = Provider.of<PostNotifier>(context);
+    //final postNotifier = Provider.of<PostNotifier>(context);
+    var postNotifier = widget.postNotifier;
     Post post = postNotifier.getPostById(widget.postInfo.id);
     isLike = post.isLike;
     isFavorite = post.isFavorite;
@@ -668,6 +830,9 @@ class _DetailedPostState extends State<DetailedPost> {
     favouriteCount = post.favouriteCount;
     commentCount = post.commentCount;
     title = post.title;
+
+    debugPrint(
+        "myAccountId: ${widget.myAccountId}, postAccountId: ${widget.postInfo.accountId}");
 
     return Scaffold(
       appBar: getAppBar(true, "返回${widget.backTo}", actions: [
@@ -707,8 +872,22 @@ class _DetailedPostState extends State<DetailedPost> {
                           "https://static-00.iconduck.com/assets.00/profile-circle-icon-2048x2048-cqe5466q.png"),
                     ),
                   ), */
-                    getAvatar(context, 0, screenWidth,
-                        '$staticIp/static/${widget.postInfo.profile}', 22),
+                    (widget.myAccountId == widget.postInfo.accountId)
+                        ? getAvatar(
+                            context,
+                            2,
+                            screenWidth,
+                            '$staticIp/static/${widget.postInfo.profile}',
+                            22,
+                            -1)
+                        : getAvatar(
+                            context,
+                            0,
+                            screenWidth,
+                            '$staticIp/static/${widget.postInfo.profile}',
+                            22,
+                            widget.postInfo.accountId),
+
                     // 用户名 & 发布日期
                     Expanded(
                       child: Container(
@@ -732,11 +911,16 @@ class _DetailedPostState extends State<DetailedPost> {
                             ]),
                       ),
                     ),
-                    // 关注按键
-                    widget.myAccountId == widget.postInfo.accountId
-                        ? const SizedBox(
-                            height: 0,
-                            width: 0,
+                    // 关注按键 / 编辑按键
+                    (widget.myAccountId == widget.postInfo.accountId)
+                        ? IconButton(
+                            key: _iconButtonKey,
+                            onPressed: () => showOperationChoice(),
+                            icon: const ImageIcon(
+                              AssetImage("assets/icons/more.png"),
+                              color: Color.fromARGB(255, 95, 95, 95),
+                              size: 25,
+                            ),
                           )
                         : Row(
                             children: [
@@ -910,6 +1094,75 @@ class _DetailedPostState extends State<DetailedPost> {
                 // 互动栏
                 Row(
                   children: [
+                    // 收藏
+                    Expanded(
+                      child: InkWell(
+                        onTap: () async {
+                          if (!isFavorite) {
+                            bool status = await postNotifier
+                                .favouritePost(widget.postInfo.id);
+                            if (status) {
+                              favouriteCount = postNotifier
+                                  .getPostFavouriteCount(widget.postInfo.id);
+                              isFavorite = true;
+                              setState(() {});
+                            }
+                          } else {
+                            bool status = await postNotifier
+                                .unfavouritePost(widget.postInfo.id);
+                            if (status) {
+                              favouriteCount = postNotifier
+                                  .getPostFavouriteCount(widget.postInfo.id);
+                              isFavorite = false;
+                              setState(() {});
+                            }
+                          }
+                        },
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            isFavorite
+                                ? Image.asset("assets/icons/starFilled.png",
+                                    height: 20)
+                                : Image.asset("assets/icons/star.png",
+                                    height: 20),
+                            Padding(
+                              padding: const EdgeInsets.only(left: 5),
+                              child: favouriteCount > 0
+                                  ? Text(
+                                      favouriteCount.toString(),
+                                      style: const TextStyle(
+                                        color: Colors.black,
+                                        //fontSize: 20,
+                                      ),
+                                    )
+                                  : const Text("收藏"),
+                            )
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // 评论
+                    Expanded(
+                      child: InkWell(
+                        onTap: () {
+                          // showCommentDialog(context, false, {});
+                          showCommentKeyboard(context, -1, -1, "");
+                        },
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Image.asset("assets/icons/comment.png", height: 20),
+                            const Padding(
+                              padding: EdgeInsets.only(left: 5),
+                              child: Text("评论"),
+                            )
+                          ],
+                        ),
+                      ),
+                    ),
+
                     // 点赞
                     Expanded(
                       child: InkWell(
@@ -952,81 +1205,11 @@ class _DetailedPostState extends State<DetailedPost> {
                                       likeCount.toString(),
                                       style: const TextStyle(
                                         color: Colors.black,
-                                        fontSize: 20,
                                       ),
                                     )
                                   : const Text(
                                       "点赞",
                                     ),
-                            )
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    // 收藏
-                    Expanded(
-                      child: InkWell(
-                        onTap: () async {
-                          if (!isFavorite) {
-                            bool status = await postNotifier
-                                .favouritePost(widget.postInfo.id);
-                            if (status) {
-                              favouriteCount = postNotifier
-                                  .getPostFavouriteCount(widget.postInfo.id);
-                              isFavorite = true;
-                              setState(() {});
-                            }
-                          } else {
-                            bool status = await postNotifier
-                                .unfavouritePost(widget.postInfo.id);
-                            if (status) {
-                              favouriteCount = postNotifier
-                                  .getPostFavouriteCount(widget.postInfo.id);
-                              isFavorite = false;
-                              setState(() {});
-                            }
-                          }
-                        },
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            isFavorite
-                                ? Image.asset("assets/icons/starFilled.png",
-                                    height: 20)
-                                : Image.asset("assets/icons/star.png",
-                                    height: 20),
-                            Padding(
-                              padding: const EdgeInsets.only(left: 5),
-                              child: favouriteCount > 0
-                                  ? Text(
-                                      favouriteCount.toString(),
-                                      style: const TextStyle(
-                                        color: Colors.black,
-                                        fontSize: 20,
-                                      ),
-                                    )
-                                  : const Text("收藏"),
-                            )
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    // 评论
-                    Expanded(
-                      child: InkWell(
-                        onTap: () {
-                          // showCommentDialog(context, false, {});
-                          showCommentKeyboard(context, -1, -1, "");
-                        },
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Image.asset("assets/icons/comment.png", height: 20),
-                            const Padding(
-                              padding: EdgeInsets.only(left: 5),
-                              child: Text("评论"),
                             )
                           ],
                         ),
@@ -1043,7 +1226,8 @@ class _DetailedPostState extends State<DetailedPost> {
                 ),
                 // 评论列表
                 // commentPortion(),
-                CommentListWidget(postInfo: widget.postInfo),
+                CommentListWidget(
+                    postInfo: widget.postInfo, myAccountId: widget.myAccountId),
               ],
             ),
           ),
@@ -1055,8 +1239,11 @@ class _DetailedPostState extends State<DetailedPost> {
 
 // ignore: must_be_immutable
 class CommentListWidget extends StatefulWidget {
+  int myAccountId;
   Post postInfo;
-  CommentListWidget({Key? key, required this.postInfo}) : super(key: key);
+  CommentListWidget(
+      {Key? key, required this.postInfo, required this.myAccountId})
+      : super(key: key);
 
   @override
   State<CommentListWidget> createState() => _CommentListWidgetState();
@@ -1474,8 +1661,16 @@ class _CommentListWidgetState extends State<CommentListWidget> {
               // 头像
               Padding(
                 padding: const EdgeInsets.fromLTRB(40, 0, 10, 0),
-                child: getAvatar(context, 0, screenWidth,
-                    '$staticIp/static/${comment.profile}', 15),
+                child: (widget.myAccountId == widget.postInfo.accountId)
+                    ? getAvatar(context, 2, screenWidth,
+                        '$staticIp/static/${comment.profile}', 15, -1)
+                    : getAvatar(
+                        context,
+                        0,
+                        screenWidth,
+                        '$staticIp/static/${comment.profile}',
+                        15,
+                        widget.postInfo.accountId),
               ),
               // 昵称+回复内容+时间
               Container(
@@ -1658,8 +1853,16 @@ class _CommentListWidgetState extends State<CommentListWidget> {
                 // color: Colors.greenAccent,
                 child: Container(
                   // color: Colors.greenAccent,
-                  child: getAvatar(context, 0, screenWidth,
-                      '$staticIp/static/${comment.profile}', 15),
+                  child: (widget.myAccountId == widget.postInfo.accountId)
+                      ? getAvatar(context, 2, screenWidth,
+                          '$staticIp/static/${comment.profile}', 15, -1)
+                      : getAvatar(
+                          context,
+                          0,
+                          screenWidth,
+                          '$staticIp/static/${comment.profile}',
+                          15,
+                          widget.postInfo.accountId),
                 ),
               ),
               // 昵称+评论内容+时间

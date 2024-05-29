@@ -49,10 +49,12 @@ class _MainPagesState extends State<MainPages> {
       // ChatPageV2()
     ];
 
-    /* if (widget.arguments.containsKey('setToArticlePage')) {
+    if (widget.arguments.containsKey('setToUserPage')) {
       setState(() {
-        _currentIndex = 1;
+        _currentIndex = 3;
       });
+    }
+    /*
     } else if (widget.arguments.containsKey('setToUserPage')) {
       setState(() {
         _currentIndex = 4;
