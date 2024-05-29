@@ -3,9 +3,11 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
+import 'package:tsinghua/component/webSocketV2.dart';
 
 import '../api/api.dart';
 import '../component/webSocket.dart';
+import '../component/webSocketV2.dart';
 import './token.dart';
 
 class LoginPage extends StatefulWidget {
@@ -87,19 +89,22 @@ class _LoginPageState extends State<LoginPage>
 
           // websocket需要的token
           token = response.data["data"]["token"];
+          myToken = token;
 
           await storage.write(
               key: "token", value: response.data["data"]["token"]);
 
           // websocket需要的id
           id = response.data["data"]["id"];
+          myAccountId = id;
 
           // 记录用户id
           await storage.write(
               key: "id", value: response.data["data"]["id"].toString());
 
           // 启动websocket
-          stompClient.activate();
+          //stompClient.activate();
+          stompClientV2.activate();
 
           setState(() {
             loginSuccess = true;

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
-import 'package:tsinghua/provider/post.dart';
+// import 'package:tsinghua/provider/post.dart';
 import '../../component/header.dart';
 import '../home/video.dart';
 import '../home/gallery.dart';
@@ -25,70 +25,124 @@ class PostCollection extends StatefulWidget {
 class _PostCollectionState extends State<PostCollection> {
   var postCollectionList = [
     {
+      "id": 1,
       "content": "测试一些发帖内容这些是用户的发帖内容",
-      "username": "用户A",
-      "date": "2024-03-27",
+      "accountId": 5,
+      "title": "这是一个标题",
+      "nickname": "同一个人",
+      "createTime": "2024-03-27",
+      "profile":
+          "https://wx4.sinaimg.cn/mw690/005HvLNqgy1hl9n68r7pqj31001betiy.jpg",
       "images": "https://storage.googleapis.com/pod_public/1300/122734.jpg",
       "video": "",
+      "likeCount": 10,
+      "commentCount": 5,
+      "favouriteCount": 1,
       "isFollow": true,
       "isLike": true,
       "isFavorite": true,
+      "isSelf": false,
     },
     {
+      "id": 2,
       "content":
           "我最近发现了一种高效的学习方法，能够帮助我更好地掌握知识。我想和大家分享一下，也希望能够听听大家的建议和意见。欢迎大家踊跃参与讨论！",
-      "username": "学习之路",
-      "date": "2024-03-26",
+      "accountId": 5,
+      "title": "这是一个标题",
+      "nickname": "同一个人",
+      "profile":
+          "https://wx4.sinaimg.cn/mw690/005HvLNqgy1hl9n68r7pqj31001betiy.jpg",
+      "createTime": "2024-03-26",
       "images": "",
       "video": "",
+      "likeCount": 10,
+      "commentCount": 5,
+      "favouriteCount": 1,
       "isFollow": true,
       "isLike": true,
       "isFavorite": true,
+      "isSelf": false,
     },
     {
+      "id": 3,
       "content": "这边主要测试多张照片的呈现啦看看效果怎么样",
-      "username": "用户B在这里",
-      "date": "2024-03-22",
+      "accountId": 5,
+      "title": "这是一个标题",
+      "nickname": "同一个人",
+      "profile":
+          "https://wx4.sinaimg.cn/mw690/005HvLNqgy1hl9n68r7pqj31001betiy.jpg",
+      "createTime": "2024-03-22",
       "images":
           "https://www.thespruceeats.com/thmb/kpuMkqk0BhGMTuSENf_IebbHu1s=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/strawberry-ice-cream-10-0b3e120e7d6f4df1be3c57c17699eb2c.jpg;https://cdn.loveandlemons.com/wp-content/uploads/2021/06/summer-desserts.jpg",
       "video": "",
+      "likeCount": 10,
+      "commentCount": 5,
+      "favouriteCount": 1,
       "isFollow": true,
       "isLike": true,
       "isFavorite": true,
+      "isSelf": false,
     },
     {
+      "id": 4,
       "content": "今天校园餐厅推出了一系列新菜品，想要邀请大家一起来参加试吃活动！欢迎大家在活动结束后分享你们的试吃体验和感受。",
-      "username": "食在校园",
-      "date": "2024-03-14",
+      "accountId": 5,
+      "title": "这是一个标题",
+      "nickname": "同一个人",
+      "profile":
+          "https://wx4.sinaimg.cn/mw690/005HvLNqgy1hl9n68r7pqj31001betiy.jpg",
+      "createTime": "2024-03-14",
       "images":
           "https://sophieng94.files.wordpress.com/2014/11/366.jpg;https://recipes.net/wp-content/uploads/2024/02/what-is-satay-chicken-1709209061.jpg;https://www.chilipeppermadness.com/wp-content/uploads/2023/06/Gochujang-Noodles-Recipe-SQ-500x500.jpg;https://shortgirltallorder.com/wp-content/uploads/2020/03/veggie-fried-rice-square-4.jpg;https://sweetsavoryandsteph.com/wp-content/uploads/2020/09/IMG_2664-scaled.jpg",
       "video": "",
+      "likeCount": 10,
+      "commentCount": 5,
+      "favouriteCount": 1,
       "isFollow": true,
       "isLike": true,
       "isFavorite": true,
+      "isSelf": false,
     },
     {
+      "id": 5,
       "content":
           "大家新学期快开始了，让我们一起为我们的校园活动出出主意吧！有没有什么有趣的活动想法？或者是你对以往的活动有什么改进意见？欢迎大家踊跃发言！",
-      "username": "小阳光学生22号",
-      "date": "2024-03-20",
+      "accountId": 5,
+      "title": "这是一个标题",
+      "nickname": "同一个人",
+      "createTime": "2024-03-20",
+      "profile":
+          "https://wx4.sinaimg.cn/mw690/005HvLNqgy1hl9n68r7pqj31001betiy.jpg",
       "images": "",
       "video":
           "https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4",
+      "likeCount": 10,
+      "commentCount": 5,
+      "favouriteCount": 1,
       "isFollow": true,
       "isLike": true,
       "isFavorite": true,
+      "isSelf": false,
     },
     {
+      "id": 6,
       "content":
           "大家来分享一下宿舍生活中的趣事、困扰和解决办法吧！有没有什么有趣的宿舍活动？或者是如何在宿舍里和室友相处愉快的小技巧？让我们一起来交流吧！",
-      "username": "宿舍生活探索者",
-      "date": "2024-03-18",
+      "accountId": 5,
+      "title": "这是一个标题",
+      "nickname": "同一个人",
+      "profile":
+          "https://wx4.sinaimg.cn/mw690/005HvLNqgy1hl9n68r7pqj31001betiy.jpg",
+      "createTime": "2024-03-18",
       "images": "",
       "video": "",
+      "likeCount": 10,
+      "commentCount": 5,
+      "favouriteCount": 1,
       "isFollow": true,
       "isLike": true,
       "isFavorite": true,
+      "isSelf": false,
     },
   ];
 
@@ -134,6 +188,7 @@ class _PostCollectionState extends State<PostCollection> {
                       isFavorite:
                           postCollectionList[index]["isFavorite"] as bool,
                       isFollow: postCollectionList[index]["isFollow"] as bool,
+                      isSelf: postCollectionList[index]["isSelf"] as bool,
                     ),
                     backTo: widget.pageTitle,
                   ),

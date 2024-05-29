@@ -13,6 +13,8 @@ import '../homePages/user/user2.dart';
 import "../homePages/user/otherUser.dart";
 
 import "../homePages/chat/chatDraft.dart";
+import "../homePages/chatV2/chatV2.dart";
+import "../homePages/chatV2/chatRoomV2.dart";
 
 String routePath = '/home';
 
@@ -29,6 +31,8 @@ Map routes = {
   'user2': (context) => const UserPage2(),
   'otherUser': (context) => const OtherUserPage(),
   'chatDraft': (context) => const ChatPage2(),
+  '/chatV2': (context) => const ChatPageV2(),
+  '/chatRoomV2': (context, {arguments}) => ChatRoomV2(arguments: arguments),
 };
 
 var onGenerateRoute = (RouteSettings settings) {

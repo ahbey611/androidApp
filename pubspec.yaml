@@ -51,6 +51,7 @@ dependencies:
   provider: ^6.1.2
   camera: ^0.10.5+9
   modal_bottom_sheet: ^2.1.2
+  get_it: ^7.6.8
 
 dev_dependencies:
   flutter_test:

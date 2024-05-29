@@ -670,10 +670,21 @@ class _DetailedPostState extends State<DetailedPost> {
     title = post.title;
 
     return Scaffold(
-      appBar: getAppBar(true, "返回${widget.backTo}"),
+      appBar: getAppBar(true, "返回${widget.backTo}", actions: [
+        // 编辑帖子的按钮
+        if (post.isSelf)
+          IconButton(
+            onPressed: () {
+              // Navigator.pop(context);
+              debugPrint("编辑帖子");
+            },
+            icon: const Icon(Icons.edit),
+          ),
+      ]),
       resizeToAvoidBottomInset: false,
       body: Container(
         color: Colors.white,
+        constraints: const BoxConstraints.expand(),
         child: SingleChildScrollView(
           controller: wholeViewController,
           child: Padding(
@@ -697,7 +708,7 @@ class _DetailedPostState extends State<DetailedPost> {
                     ),
                   ), */
                     getAvatar(context, 0, screenWidth,
-                        '$ip/static/${widget.postInfo.profile}', 22),
+                        '$staticIp/static/${widget.postInfo.profile}', 22),
                     // 用户名 & 发布日期
                     Expanded(
                       child: Container(
@@ -727,53 +738,81 @@ class _DetailedPostState extends State<DetailedPost> {
                             height: 0,
                             width: 0,
                           )
-                        : /* TextButton(
-                          onPressed: () async {
-                            ...
-                          },
-                          style: ButtonStyle(
-                            backgroundColor:
-                                MaterialStateProperty.resolveWith((states) {
-                              if (states.contains(MaterialState.pressed)) {
-                                return const Color.fromARGB(255, 210, 187, 248);
-                              }
-                              return const Color.fromARGB(255, 248, 199, 246);
-                            }),
-                          ),
-                          child: Text(isFollow ? "取消关注" : "关注"),
-                        ), */
-                        IconButton(
-                            onPressed: () async {
-                              if (!isFollow) {
-                                bool status = await postNotifier.followAccount(
-                                    widget.postInfo.id,
-                                    widget.postInfo.accountId,
-                                    UserOperation.FOLLOW);
-                                if (status) {
-                                  isFollow = true;
-                                  setState(() {});
-                                }
-                              } else {
-                                bool status =
-                                    await postNotifier.unfollowAccount(
-                                        widget.postInfo.id,
-                                        widget.postInfo.accountId,
-                                        UserOperation.UNFOLLOW);
-                                if (status) {
-                                  isFollow = false;
-                                  setState(() {});
-                                }
-                              }
-                            },
-                            icon: ImageIcon(
-                              AssetImage(isFollow
-                                  ? "assets/icons/following.png"
-                                  : "assets/icons/follow.png"),
-                              color: isFollow
-                                  ? const Color.fromARGB(255, 95, 95, 95)
-                                  : const Color.fromARGB(255, 226, 76, 109),
-                              size: 25,
-                            ),
+                        : Row(
+                            children: [
+                              IconButton(
+                                onPressed: () async {
+                                  if (!isFollow) {
+                                    bool status =
+                                        await postNotifier.followAccount(
+                                            widget.postInfo.id,
+                                            widget.postInfo.accountId,
+                                            UserOperation.FOLLOW);
+                                    if (status) {
+                                      isFollow = true;
+                                      setState(() {});
+                                    }
+                                  } else {
+                                    bool status =
+                                        await postNotifier.unfollowAccount(
+                                            widget.postInfo.id,
+                                            widget.postInfo.accountId,
+                                            UserOperation.UNFOLLOW);
+                                    if (status) {
+                                      isFollow = false;
+                                      setState(() {});
+                                    }
+                                  }
+                                },
+                                icon: ImageIcon(
+                                  AssetImage(isFollow
+                                      ? "assets/icons/following.png"
+                                      : "assets/icons/follow.png"),
+                                  color: isFollow
+                                      ? const Color.fromARGB(255, 95, 95, 95)
+                                      : const Color.fromARGB(255, 226, 76, 109),
+                                  size: 25,
+                                ),
+                              ),
+                              isFollow
+                                  ? GestureDetector(
+                                      behavior: HitTestBehavior.opaque,
+                                      onTap: () {
+                                        // 跳转到聊天页面
+                                        debugPrint("跳转到聊天页面");
+                                        Navigator.pushNamed(
+                                            context, "/chatRoomV2",
+                                            arguments: {
+                                              "accountId":
+                                                  widget.postInfo.accountId,
+                                              "nickname":
+                                                  widget.postInfo.nickname,
+                                              "profile":
+                                                  "$staticIp/static/${widget.postInfo.profile}",
+                                            });
+                                      },
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                            borderRadius:
+                                                BorderRadius.circular(10),
+                                            color: Colors.red[400]),
+                                        child: const Padding(
+                                          padding:
+                                              EdgeInsets.fromLTRB(10, 5, 10, 5),
+                                          child: Text(
+                                            "私信",
+                                            style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 15),
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                  : const SizedBox(
+                                      width: 0,
+                                      height: 0,
+                                    ),
+                            ],
                           ),
                   ],
                 ),
@@ -851,7 +890,8 @@ class _DetailedPostState extends State<DetailedPost> {
                         padding: const EdgeInsets.only(top: 10),
                         child: VideoPlayerScreen(
                           fromFile: false,
-                          videoLink: '$ip/static/${widget.postInfo.video}',
+                          videoLink:
+                              '$staticIp/static/${widget.postInfo.video}',
                           enlarge: false,
                           fullscreen: false,
                         ),
@@ -1028,6 +1068,7 @@ class _CommentListWidgetState extends State<CommentListWidget> {
   bool commentsFetched = false;
   TextEditingController commentController = TextEditingController();
   int numLines = 1;
+  bool isEditing = false;
 
   @override
   void initState() {
@@ -1047,9 +1088,10 @@ class _CommentListWidgetState extends State<CommentListWidget> {
   }
 
 // 显示评论操作选项框
-  void showCommentOperationDialog(BuildContext context, int commentId) {
+  void showCommentOperationDialog(BuildContext context, Comment comment) {
     showModalBottomSheet(
         context: context,
+        backgroundColor: Colors.white,
         builder: (BuildContext context) {
           return Column(
             mainAxisSize: MainAxisSize.min,
@@ -1060,36 +1102,70 @@ class _CommentListWidgetState extends State<CommentListWidget> {
                 ),
                 onTap: () {
                   Navigator.pop(context);
+                  isEditing = false;
                   // showCommentDialog(context, true, commentId);
+                  showCommentKeyboard(context, comment.id, comment.id,
+                      comment.commentOwnerId, comment.nickname);
                 },
               ),
-              ListTile(
-                title: const Center(
-                  child: Text("删除"),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  // 删除评论
-                },
-              ),
+              comment.isSelf
+                  ? ListTile(
+                      title: const Center(
+                        child: Text("删除"),
+                      ),
+                      onTap: () async {
+                        final commentNotifier = Provider.of<CommentNotifier>(
+                            context,
+                            listen: false);
+                        bool status = await commentNotifier.delComment_(
+                            widget.postInfo.id, comment.id);
+                        // 提示删除成功
+                        if (status) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("删除成功"),
+                                duration: Duration(seconds: 1),
+                              ),
+                            );
+                          }
+                        }
+                        if (mounted) Navigator.pop(context);
+                        // 删除评论
+                      },
+                    )
+                  : const SizedBox(height: 0, width: 0),
               // 编辑
-              ListTile(
-                title: const Center(
-                  child: Text("编辑"),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  // 编辑评论
-                },
-              ),
+              comment.isSelf
+                  ? ListTile(
+                      title: const Center(
+                        child: Text("编辑"),
+                      ),
+                      onTap: () async {
+                        Navigator.pop(context);
+                        commentController.text = comment.content;
+                        isEditing = true;
+                        // 编辑评论
+                        showCommentKeyboard(context, comment.id, comment.id,
+                            comment.commentOwnerId, comment.nickname);
+                      },
+                    )
+                  : const SizedBox(height: 0, width: 0),
               const SizedBox(height: 50)
             ],
           );
         });
   }
 
-  void showCommentKeyboard(BuildContext context, int quoteCommentId,
-      int commentOwnerId, String quoteNickname /* ,Comment comment */) {
+  void showCommentKeyboard(
+      BuildContext context,
+      int commentId,
+      int quoteCommentId,
+      int commentOwnerId,
+      String quoteNickname /* ,Comment comment */) {
+    if (!isEditing) {
+      commentController.clear();
+    }
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1228,15 +1304,17 @@ class _CommentListWidgetState extends State<CommentListWidget> {
                                 topRight: Radius.circular(10),
                               ),
                             ),
-                            child: TextFormField(
+                            child: TextField(
                               controller: commentController,
-                              textInputAction: TextInputAction.send,
+                              textInputAction: isEditing
+                                  ? TextInputAction.done
+                                  : TextInputAction.send,
                               textAlign: TextAlign.start,
                               maxLines: null,
                               maxLength: 1000,
                               autofocus: true,
                               decoration: InputDecoration(
-                                hintText: "回复：$quoteNickname",
+                                hintText: isEditing ? "" : "回复：$quoteNickname",
                                 counterText: "",
                                 border: const OutlineInputBorder(
                                   borderSide: BorderSide.none,
@@ -1248,14 +1326,42 @@ class _CommentListWidgetState extends State<CommentListWidget> {
                               onChanged: (value) {
                                 numLines = '\n'.allMatches(value).length + 1;
                                 debugPrint("numLines2: $numLines");
-                                setState(() {});
+                                // setState(() {});
                               },
-                              /* onSubmitted: (value) {
-                            // 发布评论
-                            debugPrint(value);
-                            commentController.clear();
-                            Navigator.pop(context);
-                          }, */
+                              onSubmitted: (value) async {
+                                /* // 发布评论
+                                debugPrint(value);
+                                commentController.clear();
+                                Navigator.pop(context); */
+
+                                // 发布评论
+                                debugPrint(commentController.text);
+                                String content = commentController.text;
+                                commentController.clear();
+                                numLines = 1;
+
+                                final commentNotifier =
+                                    Provider.of<CommentNotifier>(
+                                  context,
+                                  listen: false,
+                                );
+                                bool status = false;
+                                if (isEditing) {
+                                  status = await commentNotifier.editComment_(
+                                      widget.postInfo.id, commentId, content);
+                                } else {
+                                  status = await commentNotifier.addComment_(
+                                      widget.postInfo.id,
+                                      quoteCommentId,
+                                      commentOwnerId,
+                                      content);
+                                }
+
+                                isEditing = false;
+                                if (mounted) {
+                                  Navigator.pop(context);
+                                }
+                              },
                             ),
                           ),
                         ),
@@ -1278,7 +1384,7 @@ class _CommentListWidgetState extends State<CommentListWidget> {
                           padding: const EdgeInsets.fromLTRB(5, 0, 5, 5),
                           child: Container(
                             alignment: Alignment.centerRight,
-                            width: 55,
+                            width: isEditing ? 90 : 55,
                             decoration: BoxDecoration(
                               color: Colors.red[400],
                               // color: Colors.amber,
@@ -1298,23 +1404,36 @@ class _CommentListWidgetState extends State<CommentListWidget> {
                                   context,
                                   listen: false,
                                 );
-                                bool status = await commentNotifier.addComment_(
+                                bool status = false;
+                                if (isEditing) {
+                                  status = await commentNotifier.editComment_(
+                                      widget.postInfo.id, commentId, content);
+                                } else {
+                                  status = await commentNotifier.addComment_(
+                                      widget.postInfo.id,
+                                      quoteCommentId,
+                                      commentOwnerId,
+                                      content);
+                                }
+                                /* status =  await commentNotifier.addComment_(
                                     widget.postInfo.id,
                                     quoteCommentId,
                                     commentOwnerId,
-                                    content);
+                                    content); */
 
+                                isEditing = false;
                                 if (mounted) {
                                   Navigator.pop(context);
                                   // Navigator.of(context).pop([false, addedComment]);
                                 }
                               },
-                              child: const Padding(
-                                padding: EdgeInsets.fromLTRB(10, 5, 10, 5),
+                              child: Padding(
+                                padding:
+                                    const EdgeInsets.fromLTRB(10, 5, 10, 5),
                                 child: Text(
-                                  "发布",
+                                  isEditing ? "确认修改" : "发布",
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 16,
                                   ),
@@ -1356,7 +1475,7 @@ class _CommentListWidgetState extends State<CommentListWidget> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(40, 0, 10, 0),
                 child: getAvatar(context, 0, screenWidth,
-                    '$ip/static/${comment.profile}', 15),
+                    '$staticIp/static/${comment.profile}', 15),
               ),
               // 昵称+回复内容+时间
               Container(
@@ -1379,11 +1498,12 @@ class _CommentListWidgetState extends State<CommentListWidget> {
                   }, */
                   onTap: () {
                     debugPrint("点击了回复评论");
-                    showCommentKeyboard(context, comment.id,
-                        comment.commentOwnerId, comment.quoteNickname);
+
+                    showCommentKeyboard(context, comment.id, comment.id,
+                        comment.commentOwnerId, comment.nickname);
                   },
                   onLongPress: () {
-                    showCommentOperationDialog(context, comment.id);
+                    showCommentOperationDialog(context, comment);
                   },
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.start,
@@ -1539,7 +1659,7 @@ class _CommentListWidgetState extends State<CommentListWidget> {
                 child: Container(
                   // color: Colors.greenAccent,
                   child: getAvatar(context, 0, screenWidth,
-                      '$ip/static/${comment.profile}', 15),
+                      '$staticIp/static/${comment.profile}', 15),
                 ),
               ),
               // 昵称+评论内容+时间
@@ -1571,12 +1691,13 @@ class _CommentListWidgetState extends State<CommentListWidget> {
                     } */
                   }, */
                   onTap: () {
-                    showCommentKeyboard(
-                        context, comment.id, comment.id, comment.nickname);
+                    isEditing = false;
+                    showCommentKeyboard(context, comment.id, comment.id,
+                        comment.id, comment.nickname);
                   },
                   // 久按，弹出评论操作选项框
                   onLongPress: () {
-                    showCommentOperationDialog(context, comment.id);
+                    showCommentOperationDialog(context, comment);
                   },
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.start,

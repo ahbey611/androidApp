@@ -4,3 +4,4 @@
 const String addr = '60.205.143.180';
 const String ip = 'http://$addr:8080';
 const String rawIp = '$addr:8080';
+const String staticIp = 'http://$addr:80';

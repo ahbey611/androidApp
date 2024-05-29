@@ -619,7 +619,7 @@ class _SinglePostBlockState extends State<SinglePostBlock> {
                           AspectRatio(
                             aspectRatio: 1.0,
                             child: CachedNetworkImage(
-                              imageUrl: "$ip/static/${imageList[0]}",
+                              imageUrl: "$staticIp/static/${imageList[0]}",
                               fit: BoxFit.cover,
                               placeholder: (context, url) => Center(
                                 child: LoadingAnimationWidget.staggeredDotsWave(
@@ -657,7 +657,8 @@ class _SinglePostBlockState extends State<SinglePostBlock> {
                         alignment: Alignment.center,
                         children: [
                           VideoPreview(
-                            videoUrl: '$ip/static/${widget.postInfo.video}',
+                            videoUrl:
+                                '$staticIp/static/${widget.postInfo.video}',
                             // videoUrl:
                             // 'http://60.205.143.180:8080/static/1713954727612test.mp4',
                             // videoUrl:
@@ -802,7 +803,7 @@ class _SinglePostBlockState extends State<SinglePostBlock> {
                         ],
                       ),
                       // 头像
-                      /* Padding(
+                      Padding(
                         padding: const EdgeInsets.fromLTRB(5, 12, 0, 0),
                         child: Container(
                           height: 25,
@@ -815,12 +816,12 @@ class _SinglePostBlockState extends State<SinglePostBlock> {
                             ),
                             image: DecorationImage(
                               image: CachedNetworkImageProvider(
-                                  "$ip/static/${widget.postInfo.profile}"),
+                                  "$staticIp/static/${widget.postInfo.profile}"),
                               fit: BoxFit.cover,
                             ),
                           ),
                         ),
-                      ), */
+                      ),
                     ],
                   ),
                 ],

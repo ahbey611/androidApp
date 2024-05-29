@@ -14,6 +14,7 @@ class Comment {
   int commentOwnerId; // 楼主的评论id
   int likeCount;
   bool isLike;
+  bool isSelf;
   String content;
   String profile;
   String nickname;
@@ -29,6 +30,7 @@ class Comment {
     required this.commentOwnerId,
     required this.likeCount,
     required this.isLike,
+    required this.isSelf,
     required this.content,
     required this.profile,
     required this.nickname,
@@ -46,6 +48,7 @@ class CommentNotifier extends ChangeNotifier {
   // 获取评论
   Future<void> fetchPostComments(int postId) async {
     if (isFetching) return;
+    debugPrint("获取评论");
 
     isFetching = true;
     count = 0;
@@ -78,6 +81,7 @@ class CommentNotifier extends ChangeNotifier {
               likeCount: comment['likeCount'],
               isLike: comment['isLike'] == 1 ? true : false,
               // isLike: false,
+              isSelf: comment['isSelf'] == 1 ? true : false,
               content: comment['content'],
               profile: comment['profile'],
               nickname: comment['nickname'],
@@ -137,7 +141,7 @@ class CommentNotifier extends ChangeNotifier {
     debugPrint(param.toString());
     try {
       Response response =
-          await dio.post("$ip/api/post/set-comment", queryParameters: param);
+          await dio.post("$ip/api/post/add-comment", queryParameters: param);
       if (response.data['code'] == 200) {
         debugPrint("添加评论成功");
         return true;
@@ -164,6 +168,48 @@ class CommentNotifier extends ChangeNotifier {
           .get("$ip/api/post/set-$operation-comment?commentId=$commentId");
       if (response.data['code'] == 200) {
         debugPrint("点赞/取消点赞评论成功");
+        return true;
+      }
+    } catch (e) {
+      debugPrint(e.toString());
+    }
+    return false;
+  }
+
+  // 删除评论
+  Future<bool> delComment(int commentId) async {
+    final dio = Dio();
+    var token = await storage.read(key: 'token');
+    dio.options.headers["Authorization"] = "Bearer $token";
+
+    try {
+      Response response =
+          await dio.get("$ip/api/post/del-comment?commentId=$commentId");
+      if (response.data['code'] == 200) {
+        debugPrint("删除评论成功");
+        return true;
+      }
+    } catch (e) {
+      debugPrint(e.toString());
+    }
+    return false;
+  }
+
+  // 编辑评论
+  Future<bool> editComment(int commentId, String content) async {
+    final dio = Dio();
+    var token = await storage.read(key: 'token');
+    dio.options.headers["Authorization"] = "Bearer $token";
+    var param = {
+      "commentId": commentId,
+      "content": content,
+    };
+    debugPrint(param.toString());
+    try {
+      Response response =
+          await dio.post("$ip/api/post/edit-comment", queryParameters: param);
+      if (response.data['code'] == 200) {
+        debugPrint("修改评论成功");
         return true;
       }
     } catch (e) {
@@ -211,6 +257,7 @@ class CommentNotifier extends ChangeNotifier {
     return false;
   }
 
+  // 发布评论
   Future<bool> addComment_(int postId, int quoteCommentId, int commentOwnerId,
       String content) async {
     bool status =
@@ -223,6 +270,39 @@ class CommentNotifier extends ChangeNotifier {
       // debugPrint("<<<<重新获取评论");
       notifyListeners();
       return true;
+    }
+    return false;
+  }
+
+  // 删除评论
+  Future<bool> delComment_(int postId, int commentId) async {
+    bool status = await delComment(commentId);
+    if (status) {
+      isFetching = false;
+      await fetchPostComments(postId);
+      notifyListeners();
+      return true;
+    }
+    return false;
+  }
+
+  // 编辑评论
+  Future<bool> editComment_(int postId, int commentId, String content) async {
+    bool status = await editComment(commentId, content);
+    if (status) {
+      // isFetching = false;
+      // await fetchPostComments(postId);
+      // notifyListeners();
+      // return true;
+      for (int i = 0; i < comments.length; i++) {
+        for (int j = 0; j < comments[i].length; j++) {
+          if (comments[i][j].id == commentId) {
+            comments[i][j].content = content;
+            notifyListeners();
+            return true;
+          }
+        }
+      }
     }
     return false;
   }

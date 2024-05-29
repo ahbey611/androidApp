@@ -22,6 +22,27 @@ enum UserOperation {
   UNFOLLOW,
 }
 
+Post fromJson_(Map<String, dynamic> json) {
+  return Post(
+    id: json["id"],
+    accountId: json["accountId"],
+    nickname: json["nickname"],
+    profile: json["profile"],
+    title: json["title"],
+    content: json["content"],
+    images: json["images"],
+    video: json["video"],
+    createTime: json["createTime"],
+    likeCount: json["likeCount"],
+    favouriteCount: json["favouriteCount"],
+    commentCount: json["commentCount"],
+    isLike: json["isLike"],
+    isFavorite: json["isFavorite"],
+    isFollow: json["isFollow"],
+    isSelf: json["isSelf"],
+  );
+}
+
 class Post {
   int id;
   int accountId;
@@ -38,6 +59,7 @@ class Post {
   bool isLike;
   bool isFavorite;
   bool isFollow;
+  bool isSelf;
 
   Post({
     required this.id,
@@ -55,6 +77,7 @@ class Post {
     required this.isLike,
     required this.isFavorite,
     required this.isFollow,
+    required this.isSelf,
   });
 
   void printInfo() {
@@ -72,6 +95,28 @@ class Post {
     debugPrint("isLike: $isLike");
     debugPrint("isFavorite: $isFavorite");
     debugPrint("isFollow: $isFollow");
+    debugPrint("isSelf: $isSelf");
+  }
+
+  Post fromJson(Map<String, dynamic> json) {
+    return Post(
+      id: json["id"],
+      accountId: json["accountId"],
+      nickname: json["nickname"],
+      profile: json["profile"],
+      title: json["title"],
+      content: json["content"],
+      images: json["images"],
+      video: json["video"],
+      createTime: json["createTime"],
+      likeCount: json["likeCount"],
+      favouriteCount: json["favouriteCount"],
+      commentCount: json["commentCount"],
+      isLike: json["isLike"] == 1 ? true : false,
+      isFavorite: json["isFavorite"] == 1 ? true : false,
+      isFollow: json["isFollow"] == 1 ? true : false,
+      isSelf: json["isSelf"] == 1 ? true : false,
+    );
   }
 }
 
@@ -158,6 +203,7 @@ class PostNotifier extends ChangeNotifier {
               isLike: post["isLike"] == 1 ? true : false,
               isFavorite: post["isFavorite"] == 1 ? true : false,
               isFollow: post["isFollow"] == 1 ? true : false,
+              isSelf: post["isSelf"] == 1 ? true : false,
             ));
             newPosts.add(Post(
               id: post["id"],
@@ -175,6 +221,7 @@ class PostNotifier extends ChangeNotifier {
               isLike: post["isLike"] == 1 ? true : false,
               isFavorite: post["isFavorite"] == 1 ? true : false,
               isFollow: post["isFollow"] == 1 ? true : false,
+              isSelf: post["isSelf"] == 1 ? true : false,
             ));
           }
           notifyListeners();
@@ -336,6 +383,7 @@ class PostNotifier extends ChangeNotifier {
     return false;
   }
 
+  // 关注账号
   Future<bool> followAccount(int id, int accountId, UserOperation op) async {
     int index = posts.indexWhere((post) => post.id == id);
     if (index != -1) {
@@ -354,6 +402,7 @@ class PostNotifier extends ChangeNotifier {
     return false;
   }
 
+  // 取消关注账号
   Future<bool> unfollowAccount(int id, int accountId, UserOperation op) async {
     int index = posts.indexWhere((post) => post.id == id);
     if (index != -1) {
