@@ -6,6 +6,7 @@ import '../../component/header.dart';
 import '../home/video.dart';
 import '../home/gallery.dart';
 import '../home/detailed_post.dart';
+import '../../provider/post.dart';
 import '../../api/api.dart';
 
 class PostCollection extends StatefulWidget {

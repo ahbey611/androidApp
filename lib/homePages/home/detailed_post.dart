@@ -835,17 +835,7 @@ class _DetailedPostState extends State<DetailedPost> {
         "myAccountId: ${widget.myAccountId}, postAccountId: ${widget.postInfo.accountId}");
 
     return Scaffold(
-      appBar: getAppBar(true, "返回${widget.backTo}", actions: [
-        // 编辑帖子的按钮
-        if (post.isSelf)
-          IconButton(
-            onPressed: () {
-              // Navigator.pop(context);
-              debugPrint("编辑帖子");
-            },
-            icon: const Icon(Icons.edit),
-          ),
-      ]),
+      appBar: getAppBar(true, "返回${widget.backTo}"),
       resizeToAvoidBottomInset: false,
       body: Container(
         color: Colors.white,

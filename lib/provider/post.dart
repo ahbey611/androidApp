@@ -296,6 +296,7 @@ class PostNotifier extends ChangeNotifier {
               isLike: post["isLike"] == 1 ? true : false,
               isFavorite: post["isFavorite"] == 1 ? true : false,
               isFollow: post["isFollow"] == 1 ? true : false,
+              isSelf: post["isSelf"] == 1 ? true : false,
             ));
             newPosts.add(Post(
               id: post["id"],
@@ -313,6 +314,8 @@ class PostNotifier extends ChangeNotifier {
               isLike: post["isLike"] == 1 ? true : false,
               isFavorite: post["isFavorite"] == 1 ? true : false,
               isFollow: post["isFollow"] == 1 ? true : false,
+                            isSelf: post["isSelf"] == 1 ? true : false,
+
             ));
           }
           notifyListeners();
