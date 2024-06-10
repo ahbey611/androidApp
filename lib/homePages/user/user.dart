@@ -5,6 +5,7 @@ import 'package:photo_view/photo_view.dart';
 import 'package:tsinghua/homePages/user/otherUser.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../post/draft.dart';
 import 'personal_info.dart';
@@ -22,6 +23,7 @@ class UserPage extends StatefulWidget {
 
 class _UserPageState extends State<UserPage> {
   // =========================== Variables ===========================
+  bool hasData = false;
   Map accountInfo = {};
   bool useNetworkPic = false;
   List<String> schoolList = [];
@@ -48,7 +50,7 @@ class _UserPageState extends State<UserPage> {
         child: CircleAvatar(
           radius: 38,
           backgroundColor: Colors.white,
-          child: useNetworkPic
+          child: useNetworkPic && hasData
               ? CircleAvatar(
                   radius: 35,
                   backgroundColor: Colors.white,
@@ -86,7 +88,7 @@ class _UserPageState extends State<UserPage> {
                             )))
                     .then(
                   (value) {
-                    setState(() {});
+                    setRefreshSign();
                   },
                 );
               }
@@ -145,7 +147,7 @@ class _UserPageState extends State<UserPage> {
                     .push(MaterialPageRoute(
                         builder: (context) => const PersonalInfo()))
                     .then((value) {
-                  setState(() {});
+                  setRefreshSign();
                 });
               }
               break;
@@ -163,7 +165,7 @@ class _UserPageState extends State<UserPage> {
                               accountId: accountInfo["id"],
                             )))
                     .then((value) {
-                  setState(() {});
+                  setRefreshSign();
                 });
               }
               break;
@@ -182,7 +184,7 @@ class _UserPageState extends State<UserPage> {
                             )))
                     .then(
                   (value) {
-                    setState(() {});
+                    setRefreshSign();
                   },
                 );
               }
@@ -190,8 +192,12 @@ class _UserPageState extends State<UserPage> {
 
             case "我的草稿":
               {
-                Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) => const Draft()));
+                Navigator.of(context)
+                    .push(
+                        MaterialPageRoute(builder: (context) => const Draft()))
+                    .then((value) {
+                  setRefreshSign();
+                });
                 break;
               }
           }
@@ -216,7 +222,7 @@ class _UserPageState extends State<UserPage> {
   // =========================== API =================================
 
   // 获取个人资料，存在accountInfo
-  Future<void> getAccountInfo() async {
+  void getAccountInfo() async {
     var token = await storage.read(key: 'token');
     debugPrint("API: getAccountInfo /user");
     // debugPrint(token);
@@ -277,6 +283,8 @@ class _UserPageState extends State<UserPage> {
         debugPrint("API success: getFollowList");
         print(response.data["data"]);
         followAccountList = response.data["data"]["followAccountList"];
+        hasData = true;
+        setState(() {});
         // setState(() {
         //   count["follow"] = followAccountList.length;
         // });
@@ -403,7 +411,9 @@ class _UserPageState extends State<UserPage> {
               const SizedBox(height: 50)
             ],
           );
-        });
+        }).then((value) {
+      setRefreshSign();
+    });
   }
 
   void showIntroductionDialog() {
@@ -473,14 +483,32 @@ class _UserPageState extends State<UserPage> {
   @override
   void initState() {
     super.initState();
-
     loadCourseList();
-    //getAccountInfo();
+    getAccountInfo();
     //getFollowList();
+  }
+
+  Future<void> detectRefreshSign() async {
+    final prefs = await SharedPreferences.getInstance();
+    final bool? needRefresh = prefs.getBool('needRefreshUserPage');
+
+    print('refresh sign: $needRefresh');
+    if (needRefresh != null && needRefresh) {
+      prefs.setBool('needRefreshUserPage', false);
+      getAccountInfo();
+    }
+  }
+
+  Future<void> setRefreshSign() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('needRefreshUserPage', true);
+    debugPrint("set needRefreshUserPage to true");
   }
 
   @override
   Widget build(BuildContext context) {
+    detectRefreshSign();
+
     debugPrint("build user");
     debugPrint("router /user: $routePath");
     ModalRoute? route = ModalRoute.of(context);
@@ -522,161 +550,295 @@ class _UserPageState extends State<UserPage> {
             child: SizedBox(
               height: contentHeight,
               width: screenWidth,
-              child: FutureBuilder(
-                  future: getAccountInfo(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.done) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: <Widget>[
-                          // 头像 + 用户资料
-                          Column(
-                            children: [
-                              // 用户头像
-                              profilePic(),
-                              // 用户资料
-                              Column(
-                                children: [
-                                  Text(
-                                    accountInfo["username"] ?? "用户名",
-                                    style: const TextStyle(
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.bold,
-                                        height: 2),
-                                  ),
-                                  Text(
-                                    accountInfo["signature"] ?? "（个性签名）",
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.black54,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 5),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.fromLTRB(
-                                            10, 0, 10, 0),
-                                        decoration: BoxDecoration(
-                                            color: const Color.fromARGB(
-                                                255, 244, 192, 253),
-                                            borderRadius:
-                                                BorderRadius.circular(15)),
-                                        child: Text(
-                                            (accountInfo["department"] !=
-                                                        null &&
-                                                    accountInfo["department"] <
-                                                        schoolList.length)
-                                                ? schoolList[
-                                                    accountInfo["department"]]
-                                                : schoolList[0]),
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Container(
-                                        padding: const EdgeInsets.fromLTRB(
-                                            10, 0, 10, 0),
-                                        decoration: BoxDecoration(
-                                            color: const Color.fromARGB(
-                                                255, 249, 210, 246),
-                                            borderRadius:
-                                                BorderRadius.circular(15)),
-                                        child: Text(accountInfo["grade"] != null
-                                            ? gradeMapping[accountInfo["grade"]]
-                                            : ""),
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Image.asset(
-                                        accountInfo["gender"] != 2
-                                            ? "assets/icons/male.png"
-                                            : "assets/icons/female.png",
-                                        height: 20,
-                                      )
-                                    ],
-                                  )
-                                ],
-                              )
-                            ],
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: <Widget>[
+                  // 头像 + 用户资料
+                  Column(
+                    children: [
+                      // 用户头像
+                      profilePic(),
+                      // 用户资料
+                      Column(
+                        children: [
+                          Text(
+                            accountInfo["username"] ?? "用户名",
+                            style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                height: 2),
                           ),
-                          // 帖子 + 关注 + 粉丝
-                          Container(
-                            decoration: BoxDecoration(
-                                color: Colors.white,
-                                border:
-                                    Border.all(color: Colors.black12, width: 1),
-                                borderRadius: BorderRadius.circular(10),
-                                boxShadow: const [
-                                  BoxShadow(
-                                      color: Colors.black26,
-                                      blurRadius: 6,
-                                      offset: Offset(0, 3))
-                                ]),
-                            width: screenWidth * 0.8,
-                            child: Row(
-                              children: [
-                                upperButton("帖子", count["post"] ?? 0),
-                                upperButton("关注", count["follow"] ?? 0),
-                                upperButton("粉丝", count["follower"] ?? 0)
-                              ],
-                            ),
-                          ),
-                          // 下面其他跳转按钮
-                          Container(
-                            padding: const EdgeInsets.only(top: 10, bottom: 15),
-                            decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                    colors: [
-                                      Color.fromARGB(255, 255, 217, 230),
-                                      Color.fromARGB(255, 238, 160, 252)
-                                    ],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight),
-                                border:
-                                    Border.all(color: Colors.black12, width: 1),
-                                borderRadius: BorderRadius.circular(10),
-                                boxShadow: const [
-                                  BoxShadow(
-                                      color: Colors.black26,
-                                      blurRadius: 6,
-                                      offset: Offset(0, 3))
-                                ]),
-                            width: screenWidth * 0.8,
-                            child: Column(
-                              children: [
-                                Row(
-                                  children: [
-                                    lowerButton("个人资料",
-                                        "assets/icons/personal-information.png"),
-                                    lowerButton(
-                                        "我的点赞", "assets/icons/love.png"),
-                                    lowerButton(
-                                        "我的收藏", "assets/icons/favourite.png"),
-                                  ],
-                                ),
-                                Row(
-                                  children: [
-                                    lowerButton(
-                                        "我的草稿", "assets/icons/drafts.png"),
-                                    lowerButton(
-                                        "关于我们", "assets/icons/info.png"),
-                                    lowerButton(
-                                        "退出登录", "assets/icons/log-out.png"),
-                                  ],
-                                )
-                              ],
+                          Text(
+                            accountInfo["signature"] ?? "（个性签名）",
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: Colors.black54,
                             ),
                           ),
                           const SizedBox(height: 5),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding:
+                                    const EdgeInsets.fromLTRB(10, 0, 10, 0),
+                                decoration: BoxDecoration(
+                                    color: const Color.fromARGB(
+                                        255, 244, 192, 253),
+                                    borderRadius: BorderRadius.circular(15)),
+                                child: Text(hasData
+                                    ? ((accountInfo["department"] != null &&
+                                            accountInfo["department"] <
+                                                schoolList.length)
+                                        ? schoolList[accountInfo["department"]]
+                                        : schoolList[0])
+                                    : ""),
+                              ),
+                              const SizedBox(width: 5),
+                              Container(
+                                padding:
+                                    const EdgeInsets.fromLTRB(10, 0, 10, 0),
+                                decoration: BoxDecoration(
+                                    color: const Color.fromARGB(
+                                        255, 249, 210, 246),
+                                    borderRadius: BorderRadius.circular(15)),
+                                child: Text(accountInfo["grade"] != null
+                                    ? gradeMapping[accountInfo["grade"]]
+                                    : ""),
+                              ),
+                              const SizedBox(width: 5),
+                              Image.asset(
+                                accountInfo["gender"] != 2
+                                    ? "assets/icons/male.png"
+                                    : "assets/icons/female.png",
+                                height: 20,
+                              )
+                            ],
+                          )
                         ],
-                      );
-                    } else {
-                      return Center(
-                        child: LoadingAnimationWidget.staggeredDotsWave(
-                            color: Colors.pink, size: 25),
-                      );
-                    }
-                  }),
+                      )
+                    ],
+                  ),
+                  // 帖子 + 关注 + 粉丝
+                  Container(
+                    decoration: BoxDecoration(
+                        color: Colors.white,
+                        border: Border.all(color: Colors.black12, width: 1),
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: const [
+                          BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 6,
+                              offset: Offset(0, 3))
+                        ]),
+                    width: screenWidth * 0.8,
+                    child: Row(
+                      children: [
+                        upperButton("帖子", count["post"] ?? 0),
+                        upperButton("关注", count["follow"] ?? 0),
+                        upperButton("粉丝", count["follower"] ?? 0)
+                      ],
+                    ),
+                  ),
+                  // 下面其他跳转按钮
+                  Container(
+                    padding: const EdgeInsets.only(top: 10, bottom: 15),
+                    decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                            colors: [
+                              Color.fromARGB(255, 255, 217, 230),
+                              Color.fromARGB(255, 238, 160, 252)
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight),
+                        border: Border.all(color: Colors.black12, width: 1),
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: const [
+                          BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 6,
+                              offset: Offset(0, 3))
+                        ]),
+                    width: screenWidth * 0.8,
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            lowerButton("个人资料",
+                                "assets/icons/personal-information.png"),
+                            lowerButton("我的点赞", "assets/icons/love.png"),
+                            lowerButton("我的收藏", "assets/icons/favourite.png"),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            lowerButton("我的草稿", "assets/icons/drafts.png"),
+                            lowerButton("关于我们", "assets/icons/info.png"),
+                            lowerButton("退出登录", "assets/icons/log-out.png"),
+                          ],
+                        )
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                ],
+              ),
+              // child: FutureBuilder(
+              //     future: getAccountInfo(),
+              //     builder: (context, snapshot) {
+              //       if (snapshot.connectionState == ConnectionState.done) {
+              //         return Column(
+              //           crossAxisAlignment: CrossAxisAlignment.center,
+              //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              //           children: <Widget>[
+              //             // 头像 + 用户资料
+              //             Column(
+              //               children: [
+              //                 // 用户头像
+              //                 profilePic(),
+              //                 // 用户资料
+              //                 Column(
+              //                   children: [
+              //                     Text(
+              //                       accountInfo["username"] ?? "用户名",
+              //                       style: const TextStyle(
+              //                           fontSize: 22,
+              //                           fontWeight: FontWeight.bold,
+              //                           height: 2),
+              //                     ),
+              //                     Text(
+              //                       accountInfo["signature"] ?? "（个性签名）",
+              //                       style: const TextStyle(
+              //                         fontSize: 16,
+              //                         color: Colors.black54,
+              //                       ),
+              //                     ),
+              //                     const SizedBox(height: 5),
+              //                     Row(
+              //                       mainAxisAlignment: MainAxisAlignment.center,
+              //                       children: [
+              //                         Container(
+              //                           padding: const EdgeInsets.fromLTRB(
+              //                               10, 0, 10, 0),
+              //                           decoration: BoxDecoration(
+              //                               color: const Color.fromARGB(
+              //                                   255, 244, 192, 253),
+              //                               borderRadius:
+              //                                   BorderRadius.circular(15)),
+              //                           child: Text(
+              //                               (accountInfo["department"] !=
+              //                                           null &&
+              //                                       accountInfo["department"] <
+              //                                           schoolList.length)
+              //                                   ? schoolList[
+              //                                       accountInfo["department"]]
+              //                                   : schoolList[0]),
+              //                         ),
+              //                         const SizedBox(width: 5),
+              //                         Container(
+              //                           padding: const EdgeInsets.fromLTRB(
+              //                               10, 0, 10, 0),
+              //                           decoration: BoxDecoration(
+              //                               color: const Color.fromARGB(
+              //                                   255, 249, 210, 246),
+              //                               borderRadius:
+              //                                   BorderRadius.circular(15)),
+              //                           child: Text(accountInfo["grade"] != null
+              //                               ? gradeMapping[accountInfo["grade"]]
+              //                               : ""),
+              //                         ),
+              //                         const SizedBox(width: 5),
+              //                         Image.asset(
+              //                           accountInfo["gender"] != 2
+              //                               ? "assets/icons/male.png"
+              //                               : "assets/icons/female.png",
+              //                           height: 20,
+              //                         )
+              //                       ],
+              //                     )
+              //                   ],
+              //                 )
+              //               ],
+              //             ),
+              //             // 帖子 + 关注 + 粉丝
+              //             Container(
+              //               decoration: BoxDecoration(
+              //                   color: Colors.white,
+              //                   border:
+              //                       Border.all(color: Colors.black12, width: 1),
+              //                   borderRadius: BorderRadius.circular(10),
+              //                   boxShadow: const [
+              //                     BoxShadow(
+              //                         color: Colors.black26,
+              //                         blurRadius: 6,
+              //                         offset: Offset(0, 3))
+              //                   ]),
+              //               width: screenWidth * 0.8,
+              //               child: Row(
+              //                 children: [
+              //                   upperButton("帖子", count["post"] ?? 0),
+              //                   upperButton("关注", count["follow"] ?? 0),
+              //                   upperButton("粉丝", count["follower"] ?? 0)
+              //                 ],
+              //               ),
+              //             ),
+              //             // 下面其他跳转按钮
+              //             Container(
+              //               padding: const EdgeInsets.only(top: 10, bottom: 15),
+              //               decoration: BoxDecoration(
+              //                   gradient: const LinearGradient(
+              //                       colors: [
+              //                         Color.fromARGB(255, 255, 217, 230),
+              //                         Color.fromARGB(255, 238, 160, 252)
+              //                       ],
+              //                       begin: Alignment.topLeft,
+              //                       end: Alignment.bottomRight),
+              //                   border:
+              //                       Border.all(color: Colors.black12, width: 1),
+              //                   borderRadius: BorderRadius.circular(10),
+              //                   boxShadow: const [
+              //                     BoxShadow(
+              //                         color: Colors.black26,
+              //                         blurRadius: 6,
+              //                         offset: Offset(0, 3))
+              //                   ]),
+              //               width: screenWidth * 0.8,
+              //               child: Column(
+              //                 children: [
+              //                   Row(
+              //                     children: [
+              //                       lowerButton("个人资料",
+              //                           "assets/icons/personal-information.png"),
+              //                       lowerButton(
+              //                           "我的点赞", "assets/icons/love.png"),
+              //                       lowerButton(
+              //                           "我的收藏", "assets/icons/favourite.png"),
+              //                     ],
+              //                   ),
+              //                   Row(
+              //                     children: [
+              //                       lowerButton(
+              //                           "我的草稿", "assets/icons/drafts.png"),
+              //                       lowerButton(
+              //                           "关于我们", "assets/icons/info.png"),
+              //                       lowerButton(
+              //                           "退出登录", "assets/icons/log-out.png"),
+              //                     ],
+              //                   )
+              //                 ],
+              //               ),
+              //             ),
+              //             const SizedBox(height: 5),
+              //           ],
+              //         );
+              //       } else {
+              //         return Center(
+              //           child: LoadingAnimationWidget.staggeredDotsWave(
+              //               color: Colors.pink, size: 25),
+              //         );
+              //       }
+              //     }),
             ),
           )
         ],

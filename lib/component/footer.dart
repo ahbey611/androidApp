@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -12,6 +13,7 @@ import '../homePages/chatV2/chatV2.dart';
 import '../router/router.dart';
 import '../provider/get_it.dart';
 import '../provider/chat.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 Image getIcon(String name) {
   return Image.asset(
@@ -33,6 +35,13 @@ class _MainPagesState extends State<MainPages> {
   int _currentIndex = 0;
   late var homePageArgs;
   late List<Widget> _pages;
+  final PageController _pageController = PageController();
+
+  Future<void> setRefreshSign() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('needRefreshUserPage', true);
+    debugPrint("set needRefreshUserPage to true");
+  }
 
   @override
   void initState() {
@@ -44,7 +53,7 @@ class _MainPagesState extends State<MainPages> {
       "groupName": "",
     };
 
-    _pages = const [
+    _pages = [
       HomePage(),
       ChatPageV2(),
       PostPage(),
@@ -53,6 +62,7 @@ class _MainPagesState extends State<MainPages> {
     ];
 
     if (widget.arguments.containsKey('setToUserPage')) {
+      setRefreshSign();
       setState(() {
         _currentIndex = 3;
       });
@@ -89,10 +99,22 @@ class _MainPagesState extends State<MainPages> {
         resizeToAvoidBottomInset: false,
         // body: _pages[_currentIndex],
         // 页面缓存
-        body: IndexedStack(
-          index: _currentIndex,
+        body: PageView(
+          controller: _pageController,
+          onPageChanged: (index) {
+            setState(() {
+              _currentIndex = index;
+              if (index == 3) {
+                setRefreshSign();
+              }
+            });
+          },
           children: _pages,
         ),
+        // IndexedStack(
+        //   index: _currentIndex,
+        //   children: _pages,
+        // ),
         bottomNavigationBar: Consumer<ChatUserNotifier>(
             builder: (context, chatUserNotifier, child) {
           unreadMessageCount = chatUserNotifier.unreadMessageCount;
@@ -113,6 +135,7 @@ class _MainPagesState extends State<MainPages> {
                 case 3:
                   routePath = '/user';
                   break;
+
                 /* case 4:
                 routePath = '/chatV2';
                 break; */
@@ -122,6 +145,7 @@ class _MainPagesState extends State<MainPages> {
 
               setState(() {
                 _currentIndex = index;
+                _pageController.jumpToPage(index);
               });
             },
 

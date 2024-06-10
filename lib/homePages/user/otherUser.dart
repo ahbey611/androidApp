@@ -424,15 +424,30 @@ class _OtherUserPageState extends State<OtherUserPage> {
       children: [
         // 关注/取消关注
         GestureDetector(
-          onTap: () {
-            if (isFollowed) {
-              debugPrint("取消关注");
+          onTap: () async {
+            // if (isFollowed) {
+            //   debugPrint("取消关注");
+            // } else {
+            //   debugPrint("关注");
+            // }
+            // setState(() {
+            //   isFollowed = !isFollowed;
+            // });
+            if (!isFollowed) {
+              bool status = await postNotifier.setFollowStatus(
+                  widget.accountId, UserOperation.FOLLOW);
+              if (status) {
+                isFollowed = true;
+                setState(() {});
+              }
             } else {
-              debugPrint("关注");
+              bool status = await postNotifier.setFollowStatus(
+                  widget.accountId, UserOperation.UNFOLLOW);
+              if (status) {
+                isFollowed = false;
+                setState(() {});
+              }
             }
-            setState(() {
-              isFollowed = !isFollowed;
-            });
           },
           child: Container(
             width: 80,
