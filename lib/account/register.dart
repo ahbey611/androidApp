@@ -162,6 +162,13 @@ class _RegisterPageState extends State<RegisterPage>
     final String emailGetValidCodeApi =
         "$ip/api/auth/ask-code?email=${email}&type=register";
 
+    if (email.isEmpty) {
+      validCodeSentHintText = "邮箱不能为空！";
+      sentValidCodeState = -1;
+      // setState(() {});
+      return;
+    }
+
     Response response;
     response = await dio.get(emailGetValidCodeApi);
     print(response.data.toString());
@@ -559,7 +566,20 @@ class _RegisterPageState extends State<RegisterPage>
                                                 0, 0, 10, 0),
                                             child: FilledButton(
                                               onPressed: () async {
-                                                await getValidCode();
+                                                await getValidCode().then(
+                                                    (value) =>
+                                                        ScaffoldMessenger.of(
+                                                                context)
+                                                            .showSnackBar(
+                                                          SnackBar(
+                                                            content: Text(
+                                                                validCodeSentHintText),
+                                                            duration:
+                                                                const Duration(
+                                                                    milliseconds:
+                                                                        1500),
+                                                          ),
+                                                        ));
                                               },
                                               style: FilledButton.styleFrom(
                                                 backgroundColor:
@@ -645,7 +665,7 @@ class _RegisterPageState extends State<RegisterPage>
                                       ),
                                       GestureDetector(
                                         onTap: () {
-                                          print("点此登录");
+                                          // print("点此登录");
                                           Navigator.pop(context);
                                         },
                                         child: const Text(

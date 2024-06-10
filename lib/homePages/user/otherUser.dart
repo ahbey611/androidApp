@@ -58,8 +58,8 @@ class _OtherUserPageState extends State<OtherUserPage> {
   // 获取个人资料，存在accountInfo
   Future<void> getAccountInfo() async {
     var token = await storage.read(key: 'token');
-    debugPrint("API: getAccountInfo");
-    debugPrint(token);
+    debugPrint("API: getAccountInfo other_user");
+    // debugPrint(token);
 
     try {
       final dio = Dio();
@@ -88,7 +88,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
   void getFollowList() async {
     var token = await storage.read(key: 'token');
     debugPrint("API: getFollowList");
-    debugPrint(token);
+    // debugPrint(token);
 
     try {
       final dio = Dio();
@@ -585,6 +585,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
   @override
   void initState() {
     super.initState();
+    // todo：改回来
     loadCourseList();
     fetchPostList();
     getFollowList();

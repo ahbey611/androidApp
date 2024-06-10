@@ -11,6 +11,9 @@ import '../homePages/chat/chatRoom.dart';
 import '../homePages/post/post.dart';
 import '../homePages/user/user2.dart';
 import "../homePages/user/otherUser.dart";
+import "../homePages/home/search.dart";
+import '../homePages/home/searchPage.dart';
+import '../homePages/home/detailed_search_post.dart';
 
 import "../homePages/chat/chatDraft.dart";
 import "../homePages/chatV2/chatV2.dart";
@@ -33,6 +36,8 @@ Map routes = {
   'chatDraft': (context) => const ChatPage2(),
   '/chatV2': (context) => const ChatPageV2(),
   '/chatRoomV2': (context, {arguments}) => ChatRoomV2(arguments: arguments),
+  '/search': (context) => const Search(),
+  '/searchPost': (context) => const SearchPage(),
 };
 
 var onGenerateRoute = (RouteSettings settings) {

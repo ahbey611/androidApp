@@ -1,9 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 
 import '../account/token.dart';
 import '../api/api.dart';
-import '../component/webSocket.dart';
+import '../component/webSocketV2.dart';
 
 class WelcomePage extends StatefulWidget {
   const WelcomePage({Key? key}) : super(key: key);
@@ -36,7 +38,7 @@ class _WelcomePageState extends State<WelcomePage> {
       if (response.data['code'] == 200) {
         debugPrint("jwt登录成功");
         // 保存token
-        await storage.write(key: "token", value: response.data["data"]);
+        /* await storage.write(key: "token", value: response.data["data"]);
         id = response.data["data"]["id"];
 
         // 记录用户id
@@ -44,17 +46,45 @@ class _WelcomePageState extends State<WelcomePage> {
             key: "id", value: response.data["data"]["id"].toString());
 
         // 启动websocket
-        stompClient.activate();
+        stompClient.activate(); */
+        // websocket需要的token
+        token = response.data["data"]["token"];
+        myToken = token;
+        // debugPrint("myToken: $myToken");
+
+        await storage.write(
+            key: "token", value: response.data["data"]["token"]);
+
+        // websocket需要的id
+        myAccountId = response.data["data"]["id"];
+        // debugPrint("myAccountId: $myAccountId");
+
+        // 记录用户id
+        await storage.write(
+            key: "id", value: response.data["data"]["id"].toString());
+
+        // 启动websocket
+        //stompClient.activate();
+        stompClientV2.activate();
+
+        /* setState(() {
+          loginSuccess = true;
+          // Navigator.pushReplacement(context, '/mainPages',
+          //     arguments: {"accountId": -1});
+          Navigator.pushNamed(context, '/mainPages',
+              arguments: {"accountId": -1});
+        }); */
         loginState = true;
       }
     } on DioException catch (error) {
-      final response = error.response;
+      debugPrint("jwt登录请求失败1");
+      /* final response = error.response;
       if (response != null) {
         debugPrint(response.data.toString());
         debugPrint("登录请求失败1");
       } else {
         debugPrint("登录请求失败2");
-      }
+      } */
     }
   }
 
@@ -62,11 +92,12 @@ class _WelcomePageState extends State<WelcomePage> {
   void loginWithTimeout() async {
     String? token = await storage.read(key: 'token');
     if (token == null) {
-      if (context.mounted) Navigator.pushNamed(context, '/login');
+      if (context.mounted) Navigator.pushNamed(context, 'login');
       return;
     }
 
     debugPrint("login token");
+    debugPrint(token);
 
     const Duration timeout = Duration(seconds: 4);
 
@@ -83,130 +114,139 @@ class _WelcomePageState extends State<WelcomePage> {
       }
       // 自动登录失败，跳转至登录页面
       else {
-        Navigator.pushNamed(context, '/login');
+        Navigator.pushNamed(context, 'login');
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SingleChildScrollView(
-        // 背景图片
-        child: Container(
-          height: MediaQuery.of(context).size.height,
-          width: MediaQuery.of(context).size.width,
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage("assets/images/bg9.jpg"),
-              fit: BoxFit.cover,
-              opacity: 0.65,
+    return PopScope(
+      onPopInvoked: (bool didPop) {
+        if (didPop) {
+          // debugPrint("pop");
+          exit(0);
+        }
+      },
+      canPop: true,
+      child: Scaffold(
+        body: SingleChildScrollView(
+          // 背景图片
+          child: Container(
+            height: MediaQuery.of(context).size.height,
+            width: MediaQuery.of(context).size.width,
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage("assets/images/bg9.jpg"),
+                fit: BoxFit.cover,
+                opacity: 0.65,
+              ),
             ),
-          ),
-          // 插图+标题+标语
-          child: Stack(
-            children: [
-              // logo插图
-              Positioned(
-                top: MediaQuery.of(context).size.height * 0.15,
-                left: MediaQuery.of(context).size.width * 0.05,
-                right: MediaQuery.of(context).size.width * 0.05,
-                child: Container(
-                  height: MediaQuery.of(context).size.height * 0.45,
-                  decoration: const BoxDecoration(
-                    image: DecorationImage(
-                      image: AssetImage("assets/images/logo3.png"),
-                      fit: BoxFit.contain,
+            // 插图+标题+标语
+            child: Stack(
+              children: [
+                // logo插图
+                Positioned(
+                  top: MediaQuery.of(context).size.height * 0.15,
+                  left: MediaQuery.of(context).size.width * 0.05,
+                  right: MediaQuery.of(context).size.width * 0.05,
+                  child: Container(
+                    height: MediaQuery.of(context).size.height * 0.45,
+                    decoration: const BoxDecoration(
+                      image: DecorationImage(
+                        image: AssetImage("assets/images/logo3.png"),
+                        fit: BoxFit.contain,
+                      ),
                     ),
                   ),
                 ),
-              ),
 
-              // “校园论坛”标题
-              Positioned(
-                top: MediaQuery.of(context).size.height * 0.59,
-                left: 0,
-                right: 0,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // stroke as border
-                    Text(
-                      "校园论坛X",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 46,
-                        foreground: Paint()
-                          ..style = PaintingStyle.stroke
-                          ..strokeWidth = 14
-                          ..color = const Color.fromARGB(255, 255, 255, 255),
-                        fontWeight: FontWeight.w900,
-                        fontFamily: "Zcool2",
-                        shadows: [
-                          Shadow(
-                            blurRadius: 10,
-                            color: Colors.black.withOpacity(0.5),
-                            offset: const Offset(8, 12),
-                          ),
-                        ],
+                // “校园论坛”标题
+                Positioned(
+                  top: MediaQuery.of(context).size.height * 0.59,
+                  left: 0,
+                  right: 0,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // stroke as border
+                      Text(
+                        "校园论坛X",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 46,
+                          foreground: Paint()
+                            ..style = PaintingStyle.stroke
+                            ..strokeWidth = 14
+                            ..color = const Color.fromARGB(255, 255, 255, 255),
+                          fontWeight: FontWeight.w900,
+                          fontFamily: "Zcool2",
+                          shadows: [
+                            Shadow(
+                              blurRadius: 10,
+                              color: Colors.black.withOpacity(0.5),
+                              offset: const Offset(8, 12),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    // solid text
-                    const Text(
-                      "校园论坛X",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 46,
-                        color: Colors.black,
-                        fontWeight: FontWeight.w900,
-                        fontFamily: "Zcool2",
+                      // solid text
+                      const Text(
+                        "校园论坛X",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 46,
+                          color: Colors.black,
+                          fontWeight: FontWeight.w900,
+                          fontFamily: "Zcool2",
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
 
-              // 标语
-              Positioned(
-                top: MediaQuery.of(context).size.height * 0.72,
-                left: MediaQuery.of(context).size.width * 0.1,
-                right: MediaQuery.of(context).size.width * 0.1,
-                child: Stack(
-                  children: [
-                    Text(
-                      "面向清华大学生发布校园生活帖子，吐槽生活，心得交流的平台",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 18,
-                        foreground: Paint()
-                          ..style = PaintingStyle.stroke
-                          ..strokeWidth = 5
-                          ..color = Color.fromARGB(185, 255, 255, 255),
-                        fontWeight: FontWeight.w700,
-                        fontFamily: "BalooBhai",
-                        shadows: [
-                          Shadow(
-                            blurRadius: 15,
-                            color: Colors.black.withOpacity(0.5),
-                            offset: const Offset(8, 12),
-                          ),
-                        ],
+                // 标语
+                Positioned(
+                  top: MediaQuery.of(context).size.height * 0.72,
+                  left: MediaQuery.of(context).size.width * 0.1,
+                  right: MediaQuery.of(context).size.width * 0.1,
+                  child: Stack(
+                    children: [
+                      Text(
+                        "面向清华大学生发布校园生活帖子，吐槽生活，心得交流的平台",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 18,
+                          foreground: Paint()
+                            ..style = PaintingStyle.stroke
+                            ..strokeWidth = 5
+                            ..color = Color.fromARGB(185, 255, 255, 255),
+                          fontWeight: FontWeight.w700,
+                          fontFamily: "BalooBhai",
+                          shadows: [
+                            Shadow(
+                              blurRadius: 15,
+                              color: Colors.black.withOpacity(0.5),
+                              offset: const Offset(8, 12),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    const Text(
-                      "面向清华大学生发布校园生活帖子，吐槽生活，心得交流的平台",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: Colors.black,
-                        fontWeight: FontWeight.w700,
-                        fontFamily: "BalooBhai",
+                      const Text(
+                        "面向清华大学生发布校园生活帖子，吐槽生活，心得交流的平台",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Colors.black,
+                          fontWeight: FontWeight.w700,
+                          fontFamily: "BalooBhai",
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              )
-            ],
+                    ],
+                  ),
+                )
+              ],
+            ),
           ),
         ),
       ),

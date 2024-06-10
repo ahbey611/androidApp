@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
 import 'package:provider/provider.dart';
 import '../homePages/home/home.dart';
@@ -67,130 +70,145 @@ class _MainPagesState extends State<MainPages> {
   Widget build(BuildContext context) {
     final chatUserNotifier = GetIt.instance<ChatUserNotifier>();
     int unreadMessageCount = chatUserNotifier.unreadMessageCount;
-    return Scaffold(
-      resizeToAvoidBottomInset: false,
-      // body: _pages[_currentIndex],
-      // 页面缓存
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _pages,
-      ),
-      bottomNavigationBar: Consumer<ChatUserNotifier>(
-          builder: (context, chatUserNotifier, child) {
-        unreadMessageCount = chatUserNotifier.unreadMessageCount;
+    return PopScope(
+      onPopInvoked: (bool isPop) {
+        if (isPop) {
+          debugPrint("pop invoked");
+          // Navigator.of(context).pop();
 
-        return BottomNavigationBar(
-          //被点击时
-          onTap: (index) {
-            switch (index) {
-              case 0:
-                routePath = '/home';
-                break;
-              case 1:
-                routePath = '/chatV2';
-                break;
-              case 2:
-                routePath = '/post';
-                break;
-              case 3:
-                routePath = '/user';
-                break;
-              /* case 4:
+          // quit app
+          //SystemChannels.platform.invokeMethod('SystemNavigator.pop');
+          // Navigator.of(context)
+          //     .pushNamedAndRemoveUntil('myMainPage', (r) => r == null);
+          //return false;
+          exit(0);
+        }
+      },
+      canPop: true,
+      child: Scaffold(
+        resizeToAvoidBottomInset: false,
+        // body: _pages[_currentIndex],
+        // 页面缓存
+        body: IndexedStack(
+          index: _currentIndex,
+          children: _pages,
+        ),
+        bottomNavigationBar: Consumer<ChatUserNotifier>(
+            builder: (context, chatUserNotifier, child) {
+          unreadMessageCount = chatUserNotifier.unreadMessageCount;
+
+          return BottomNavigationBar(
+            //被点击时
+            onTap: (index) {
+              switch (index) {
+                case 0:
+                  routePath = '/home';
+                  break;
+                case 1:
+                  routePath = '/chatV2';
+                  break;
+                case 2:
+                  routePath = '/post';
+                  break;
+                case 3:
+                  routePath = '/user';
+                  break;
+                /* case 4:
                 routePath = '/chatV2';
                 break; */
-              default:
-                routePath = '/home';
-            }
+                default:
+                  routePath = '/home';
+              }
 
-            setState(() {
-              _currentIndex = index;
-            });
-          },
+              setState(() {
+                _currentIndex = index;
+              });
+            },
 
-          currentIndex: _currentIndex, //被选中的
-          // https://blog.csdn.net/yechaoa/article/details/89852488
-          type: BottomNavigationBarType.fixed,
-          // iconSize: 24,
-          fixedColor: Colors.black, //被选中时的颜色
-          backgroundColor: Colors.white, //背景颜色
-          selectedFontSize: 12, // Set the font size for selected label
-          unselectedFontSize: 10,
-          items: [
-            BottomNavigationBarItem(
-              //https://blog.csdn.net/qq_27494241/article/details/107167585?utm_medium=distribute.pc_relevant.none-task-blog-2~default~baidujs_baidulandingword~default-1-107167585-blog-85248876.235^v38^pc_relevant_default_base3&spm=1001.2101.3001.4242.2&utm_relevant_index=4
-              // https://stackoverflow.com/questions/60151052/can-i-add-spacing-around-an-icon-in-flutter-bottom-navigation-bar
-              label: "首页",
-              icon: Padding(
-                padding: const EdgeInsets.fromLTRB(0, 0, 0, 2),
-                child: _currentIndex == 0
-                    ? getIcon("home1.png")
-                    : getIcon("home0.png"),
+            currentIndex: _currentIndex, //被选中的
+            // https://blog.csdn.net/yechaoa/article/details/89852488
+            type: BottomNavigationBarType.fixed,
+            // iconSize: 24,
+            fixedColor: Colors.black, //被选中时的颜色
+            backgroundColor: Colors.white, //背景颜色
+            selectedFontSize: 12, // Set the font size for selected label
+            unselectedFontSize: 10,
+            items: [
+              BottomNavigationBarItem(
+                //https://blog.csdn.net/qq_27494241/article/details/107167585?utm_medium=distribute.pc_relevant.none-task-blog-2~default~baidujs_baidulandingword~default-1-107167585-blog-85248876.235^v38^pc_relevant_default_base3&spm=1001.2101.3001.4242.2&utm_relevant_index=4
+                // https://stackoverflow.com/questions/60151052/can-i-add-spacing-around-an-icon-in-flutter-bottom-navigation-bar
+                label: "首页",
+                icon: Padding(
+                  padding: const EdgeInsets.fromLTRB(0, 0, 0, 2),
+                  child: _currentIndex == 0
+                      ? getIcon("home1.png")
+                      : getIcon("home0.png"),
+                ),
               ),
-            ),
-            BottomNavigationBarItem(
-              label: "消息",
-              /* icon: Padding(
+              BottomNavigationBarItem(
+                label: "消息",
+                /* icon: Padding(
               padding: const EdgeInsets.fromLTRB(0, 0, 0, 2),
               child: _currentIndex == 1
                   ? getIcon("chat1.png")
                   : getIcon("chat0.png"),
             ), */
-              icon: Stack(
-                alignment: Alignment.topRight,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(0, 0, 8, 2),
-                    child: _currentIndex == 1
-                        ? getIcon("chat1.png")
-                        : getIcon("chat0.png"),
-                  ),
-                  unreadMessageCount > 0
-                      ? Positioned(
-                          right:
-                              0, // Adjust this value to move the badge further to the right
-                          // top: -3,
-                          child: Container(
-                            height: 18,
-                            width: 18,
-                            decoration: const BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Center(
-                              child: Text(
-                                // "12",
-                                unreadMessageCount.toString(),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
+                icon: Stack(
+                  alignment: Alignment.topRight,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(0, 0, 8, 2),
+                      child: _currentIndex == 1
+                          ? getIcon("chat1.png")
+                          : getIcon("chat0.png"),
+                    ),
+                    unreadMessageCount > 0
+                        ? Positioned(
+                            right:
+                                0, // Adjust this value to move the badge further to the right
+                            // top: -3,
+                            child: Container(
+                              height: 18,
+                              width: 18,
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  // "12",
+                                  unreadMessageCount.toString(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        )
-                      : const SizedBox(width: 0, height: 0),
-                ],
+                          )
+                        : const SizedBox(width: 0, height: 0),
+                  ],
+                ),
               ),
-            ),
-            BottomNavigationBarItem(
-              label: "发布",
-              icon: Padding(
-                padding: const EdgeInsets.fromLTRB(0, 0, 0, 2),
-                child: _currentIndex == 2
-                    ? getIcon("add1.png")
-                    : getIcon("add0.png"),
+              BottomNavigationBarItem(
+                label: "发布",
+                icon: Padding(
+                  padding: const EdgeInsets.fromLTRB(0, 0, 0, 2),
+                  child: _currentIndex == 2
+                      ? getIcon("add1.png")
+                      : getIcon("add0.png"),
+                ),
               ),
-            ),
-            BottomNavigationBarItem(
-              label: "我的",
-              icon: Padding(
-                padding: const EdgeInsets.fromLTRB(0, 0, 0, 2),
-                child: _currentIndex == 3
-                    ? getIcon("user1.png")
-                    : getIcon("user0.png"),
+              BottomNavigationBarItem(
+                label: "我的",
+                icon: Padding(
+                  padding: const EdgeInsets.fromLTRB(0, 0, 0, 2),
+                  child: _currentIndex == 3
+                      ? getIcon("user1.png")
+                      : getIcon("user0.png"),
+                ),
               ),
-            ),
-            /* BottomNavigationBarItem(
+              /* BottomNavigationBarItem(
               label: "聊天",
               icon: Padding(
                 padding: const EdgeInsets.fromLTRB(0, 0, 0, 2),
@@ -199,9 +217,10 @@ class _MainPagesState extends State<MainPages> {
                     : getIcon("star.png"),
               ),
             ), */
-          ],
-        );
-      }),
+            ],
+          );
+        }),
+      ),
     );
   }
 }

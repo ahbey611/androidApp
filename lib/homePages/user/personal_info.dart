@@ -162,7 +162,7 @@ class _PersonalInfoState extends State<PersonalInfo> {
   // 获取个人资料，存在accountInfo
   void getAccountInfo() async {
     var token = await storage.read(key: 'token');
-    print("API: getAccountInfo");
+    print("API: getAccountInfo personal_info");
     print(token);
 
     try {

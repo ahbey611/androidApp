@@ -8,6 +8,7 @@ import './provider/post.dart';
 import './provider/comment.dart';
 import './provider/chat.dart';
 import './provider/get_it.dart';
+import './provider/search.dart';
 
 void main() {
   setupGetIt();
@@ -43,6 +44,10 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider.value(value: GetIt.instance<ChatUserNotifier>()),
         ChangeNotifierProvider.value(
             value: GetIt.instance<ChatMessageNotifier>()),
+        ChangeNotifierProvider.value(
+            value: GetIt.instance<SearchHistoryNotifier>()),
+        ChangeNotifierProvider.value(
+            value: GetIt.instance<SearchPostNotifier>()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -50,7 +55,7 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           primarySwatch: Colors.blue,
         ),
-        initialRoute: "login",
+        initialRoute: "/", // login
         onGenerateRoute: onGenerateRoute,
       ),
     );

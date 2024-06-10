@@ -6,21 +6,23 @@ import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:provider/provider.dart';
+import 'package:tsinghua/homePages/home/search.dart';
 import '../../account/token.dart';
 import '../../api/api.dart';
 import 'video.dart';
-import 'detailed_post.dart';
+import './detailed_search_post.dart';
 import '../../component/function.dart';
-import '../../provider/post.dart';
+import '../../provider/search.dart';
+import 'package:get_it/get_it.dart';
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+class SearchPage extends StatefulWidget {
+  const SearchPage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<SearchPage> createState() => _SearchPageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _SearchPageState extends State<SearchPage> {
   // 从后端请求得到的原始数据
   List<dynamic> data = [];
   bool refresh = true;
@@ -106,8 +108,8 @@ class _HomePageState extends State<HomePage> {
     _isLoading = true;
     setState(() {});
 
-    PostNotifier postNotifier =
-        Provider.of<PostNotifier>(context, listen: false);
+    SearchPostNotifier postNotifier =
+        Provider.of<SearchPostNotifier>(context, listen: false);
 
     await postNotifier.fetchPostList(filterType);
     totalPostList = postNotifier.newPosts;
@@ -150,19 +152,7 @@ class _HomePageState extends State<HomePage> {
 
   // 初始化帖子列表数量
   void initiatePostList() {
-    /* int count = min(12, totalPostList.length);
-    if (count % 2 != 0) count -= 1;
-    for (int i = 0; i < count; i = i + 2) {
-      leftPostList.add(totalPostList[i]);
-      leftColorSequence.add(randomNumber(0, 5));
-      rightPostList.add(totalPostList[i + 1]);
-      rightColorSequence.add(randomNumber(0, 5));
-    }
-    // if (count % 2 != 0) leftPostList.add(totalPostList[count - 1]);
-    accumulateTotalPost = count; */
-
     int count = totalPostList.length;
-    // if (count % 2 != 0) count -= 1;
     for (int i = 0; i < count; i = i + 2) {
       leftPostList.add(totalPostList[i]);
       leftColorSequence.add(randomNumber(0, 5));
@@ -170,7 +160,6 @@ class _HomePageState extends State<HomePage> {
       rightPostList.add(totalPostList[i + 1]);
       rightColorSequence.add(randomNumber(0, 5));
     }
-    // if (count % 2 != 0) leftPostList.add(totalPostList[count - 1]);
     accumulateTotalPost = count;
   }
 
@@ -219,268 +208,240 @@ class _HomePageState extends State<HomePage> {
 
     // print("rebuild");
 
-    return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Color.fromARGB(255, 250, 209, 252),
-                Color.fromARGB(255, 255, 255, 255),
-              ],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
+    return PopScope(
+      onPopInvoked: (bool didPop) {
+        if (didPop) {
+          debugPrint("pop invoked");
+          final SearchPostNotifier searchPostNotifier =
+              GetIt.instance<SearchPostNotifier>();
+          searchPostNotifier.isFetching = false;
+          searchPostNotifier.setPageNSize(1, 20);
+          searchPostNotifier.hasMorePosts = true;
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Color.fromARGB(255, 250, 209, 252),
+                  Color.fromARGB(255, 255, 255, 255),
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+              border: Border(
+                bottom: BorderSide(
+                  color: Color.fromRGBO(169, 171, 179, 1),
+                  width: 1,
+                ),
+              ),
             ),
-            border: Border(
-              bottom: BorderSide(
-                color: Color.fromRGBO(169, 171, 179, 1),
-                width: 1,
+            /* child: SizedBox(
+              width: 100,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(10, 10, 10, 0),
+                child: TextField(
+                  controller: searchHistoryController,
+                  decoration: const InputDecoration(
+                    hintText: '搜索...',
+                    hintStyle: TextStyle(
+                      color: Color.fromRGBO(169, 171, 179, 1),
+                    ),
+                    prefixIcon: Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderSide: BorderSide.none,
+                      borderRadius: BorderRadius.all(Radius.circular(15)),
+                    ),
+                  ),
+                  onSubmitted: (String value) {
+                    // 搜索
+                    final searchHistoryNotifier =
+                        GetIt.instance<SearchHistoryNotifier>();
+                    searchHistoryNotifier.addSearchHistory(value);
+                    debugPrint(value);
+                    // searchHistoryController.clear();
+                    searchHistoryNotifier.fetchSearchHistory();
+                    setState(() {});
+                  },
+                ),
+              ),
+            ),
+           */
+            child: Container(
+              // height: 100,
+              constraints: const BoxConstraints.expand(),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(0, 15, 0, 0),
+                child: Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.search),
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                      ),
+                      GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () {
+                          Navigator.pop(context);
+                        },
+                        child: Container(
+                          constraints: BoxConstraints(
+                            maxWidth: screenWidth * 0.75,
+                            // maxHeight: 30,
+                          ),
+                          child: Text(
+                            searchHistoryController.text,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              color: Color.fromRGBO(90, 91, 92, 1),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ]),
               ),
             ),
           ),
         ),
-        title: Stack(children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              TextButton(
-                onPressed: () async {
-                  filterFollow = false;
-                  filterType = FilterType.NONE;
-
-                  // 重置所有数据
-                  totalPostList.clear();
-                  leftPostList.clear();
-                  rightPostList.clear();
-                  setState(() {});
-
-                  final postNotifier =
-                      Provider.of<PostNotifier>(context, listen: false);
-
-                  // 调用刷新函数
-                  await postNotifier.refreshPostList(filterType);
-                  totalPostList = postNotifier.posts;
-                  initiatePostList();
-                  setState(() {});
-                },
-                child: Text(
-                  "推荐",
-                  style: filterFollow
-                      ? const TextStyle(
-                          color: Colors.black26,
-                        )
-                      : const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20,
-                          color: Color.fromARGB(255, 222, 109, 242),
-                        ),
+        body: Consumer<SearchPostNotifier>(
+          builder: (context, postNotifier, child) {
+            if (postNotifier.isFetching) {
+              return Container(
+                constraints: const BoxConstraints.expand(),
+                color: Colors.white,
+                child: Center(
+                  child: LoadingAnimationWidget.staggeredDotsWave(
+                      color: Colors.pink, size: 25),
                 ),
-              ),
-              TextButton(
-                onPressed: () async {
-                  filterFollow = true;
-                  filterType = FilterType.FOLLOW;
+              );
+            }
 
-                  // 重置所有数据
-                  totalPostList.clear();
-                  leftPostList.clear();
-                  rightPostList.clear();
-                  setState(() {});
-
-                  final postNotifier =
-                      Provider.of<PostNotifier>(context, listen: false);
-
-                  // 调用刷新函数
-                  await postNotifier.refreshPostList(filterType);
-                  totalPostList = postNotifier.posts;
-                  initiatePostList();
-                  setState(() {});
-                },
-                child: Text(
-                  "关注",
-                  style: filterFollow
-                      ? const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20,
-                          color: Color.fromARGB(255, 222, 109, 242),
-                        )
-                      : const TextStyle(
-                          color: Colors.black26,
-                        ),
+            // 加载中
+            if (postNotifier.isRefreshing) {
+              return Container(
+                constraints: const BoxConstraints.expand(),
+                color: Colors.white,
+                child: Center(
+                  child: LoadingAnimationWidget.staggeredDotsWave(
+                      color: Colors.pink, size: 25),
                 ),
-              ),
-            ],
-          ),
-          // 右边的搜索按钮
-          Positioned(
-            right: -10,
-            child: IconButton(
-              onPressed: () {
-                Navigator.of(context).pushNamed("/search");
-              },
-              icon: const Icon(
-                Icons.search,
-                color: Colors.black,
-              ),
-            ),
-          ),
-        ]),
-        /* actions: [
-          IconButton(
-            onPressed: () {
-              Navigator.of(context).pushNamed("search");
-            },
-            icon: const Icon(
-              Icons.search,
-              color: Colors.black,
-            ),
-          ),
-        ], */
-      ),
-      body: Consumer<PostNotifier>(
-        builder: (context, postNotifier, child) {
-          /* if (postNotifier.isFetching) {
-            return Center(
-              child: LoadingAnimationWidget.staggeredDotsWave(
-                  color: Colors.pink, size: 25),
-            );
-          } */
+              );
+            }
 
-          // 加载中
-          if (postNotifier.isRefreshing) {
-            return Center(
-              child: LoadingAnimationWidget.staggeredDotsWave(
-                  color: Colors.pink, size: 25),
-            );
-          }
-
-          // 没有帖子
-          if (postNotifier.posts.isEmpty) {
-            return Container(
-              height: screenHeight,
-              color: Colors.white,
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Image.asset(
-                      "assets/icons/no_post.png",
-                      width: 80,
-                      height: 80,
-                    ),
-                    const SizedBox(
-                      height: 10,
-                    ),
-                    const Text(
-                      "暂无帖子",
-                      style: TextStyle(
-                        fontSize: 20,
-                        color: Colors.black26,
+            // 没有帖子
+            if (postNotifier.newPosts.isEmpty || postNotifier.posts.isEmpty) {
+              return Container(
+                height: screenHeight,
+                constraints: const BoxConstraints.expand(),
+                color: Colors.white,
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Image.asset(
+                        "assets/icons/no_post.png",
+                        width: 80,
+                        height: 80,
                       ),
+                      const SizedBox(
+                        height: 10,
+                      ),
+                      const Text(
+                        "暂无帖子",
+                        style: TextStyle(
+                          fontSize: 20,
+                          color: Colors.black26,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            return RefreshIndicator(
+              // onRefresh: onRefresh,
+              onRefresh: () async {
+                // 重置所有数据
+                totalPostList.clear();
+                leftPostList.clear();
+                rightPostList.clear();
+                setState(() {});
+
+                // 调用刷新函数
+                await postNotifier.refreshPostList(filterType);
+                totalPostList = postNotifier.posts;
+                initiatePostList();
+                setState(() {});
+              },
+              child: SingleChildScrollView(
+                controller: wholeListViewController,
+                padding: const EdgeInsets.only(top: 10),
+                child: Column(
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        // 左列表
+                        SizedBox(
+                          width: screenWidth * 0.46,
+                          child: ListView.builder(
+                            key: leftListKey,
+                            physics: const NeverScrollableScrollPhysics(),
+                            shrinkWrap: true,
+                            itemCount: leftPostList.length,
+                            itemBuilder: (context, index) {
+                              return SinglePostBlock(
+                                  postInfo: leftPostList[index],
+                                  colorIndex: leftColorSequence[index],
+                                  myAccountId: myAccountId);
+                            },
+                          ),
+                        ),
+                        // 右列表
+                        SizedBox(
+                          width: screenWidth * 0.46,
+                          child: ListView.builder(
+                            key: rightListKey,
+                            physics: const NeverScrollableScrollPhysics(),
+                            shrinkWrap: true,
+                            itemCount: rightPostList.length,
+                            itemBuilder: (context, index) {
+                              return SinglePostBlock(
+                                  postInfo: rightPostList[index],
+                                  colorIndex: rightColorSequence[index],
+                                  myAccountId: myAccountId);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(
+                      width: screenWidth,
+                      child: _isLoading && hasMorePosts
+                          ? Center(
+                              child: LoadingAnimationWidget.staggeredDotsWave(
+                                  color: Colors.pink, size: 25),
+                            )
+                          : const SizedBox(
+                              width: 0,
+                              height: 0,
+                            ),
                     ),
                   ],
                 ),
               ),
             );
-          }
-
-          /* for (var post in leftPostList) {
-            post.printInfo();
-          } */
-          // if (init) {
-          // totalPostList = postNotifier.newPosts;
-          // if (refresh) {
-          // initiatePostList();
-          // refresh = false;
-          // }
-          // }
-          /* for (var post in leftPostList) {
-            post.printInfo();
-          }
-          for (var post in rightPostList) {
-            // debugPrint("rightpost: $post");
-            post.printInfo();
-          } */
-          /* if (refresh) {
-            refresh = false;
-          } */
-
-          return RefreshIndicator(
-            // onRefresh: onRefresh,
-            onRefresh: () async {
-              // 重置所有数据
-              totalPostList.clear();
-              leftPostList.clear();
-              rightPostList.clear();
-              setState(() {});
-
-              // 调用刷新函数
-              await postNotifier.refreshPostList(filterType);
-              totalPostList = postNotifier.posts;
-              initiatePostList();
-              setState(() {});
-            },
-            child: SingleChildScrollView(
-              controller: wholeListViewController,
-              padding: const EdgeInsets.only(top: 10),
-              child: Column(
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      // 左列表
-                      SizedBox(
-                        width: screenWidth * 0.46,
-                        child: ListView.builder(
-                          key: leftListKey,
-                          physics: const NeverScrollableScrollPhysics(),
-                          shrinkWrap: true,
-                          itemCount: leftPostList.length,
-                          itemBuilder: (context, index) {
-                            return SinglePostBlock(
-                                postInfo: leftPostList[index],
-                                colorIndex: leftColorSequence[index],
-                                myAccountId: myAccountId);
-                          },
-                        ),
-                      ),
-                      // 右列表
-                      SizedBox(
-                        width: screenWidth * 0.46,
-                        child: ListView.builder(
-                          key: rightListKey,
-                          physics: const NeverScrollableScrollPhysics(),
-                          shrinkWrap: true,
-                          itemCount: rightPostList.length,
-                          itemBuilder: (context, index) {
-                            return SinglePostBlock(
-                                postInfo: rightPostList[index],
-                                colorIndex: rightColorSequence[index],
-                                myAccountId: myAccountId);
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(
-                    width: screenWidth,
-                    child: _isLoading && hasMorePosts
-                        ? Center(
-                            child: LoadingAnimationWidget.staggeredDotsWave(
-                                color: Colors.pink, size: 25),
-                          )
-                        : const SizedBox(
-                            width: 0,
-                            height: 0,
-                          ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
+          },
+        ),
       ),
     );
   }
@@ -570,7 +531,7 @@ class _SinglePostBlockState extends State<SinglePostBlock> {
 
   @override
   Widget build(BuildContext context) {
-    final postNotifier = Provider.of<PostNotifier>(context);
+    final postNotifier = Provider.of<SearchPostNotifier>(context);
     isLike = postNotifier.getIsLike(postId);
     likeCount = postNotifier.getPostLikeCount(postId);
 
@@ -609,9 +570,10 @@ class _SinglePostBlockState extends State<SinglePostBlock> {
             for (var post in postNotifier.posts) {
               debugPrint("post id: ${post.id}");
             }
+            // TODO
             Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (context) => DetailedPost(
+                builder: (context) => DetailedSearchPost(
                   postInfo: widget.postInfo,
                   needPopComment: false,
                   backTo: "首页",

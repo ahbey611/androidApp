@@ -4,11 +4,14 @@ import 'package:flutter/services.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:tsinghua/homePages/user/otherUser.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
+
 import '../post/draft.dart';
 import 'personal_info.dart';
 import 'post_collection.dart';
 import '../../account/token.dart';
 import '../../api/api.dart';
+import '../../router/router.dart';
 
 class UserPage extends StatefulWidget {
   const UserPage({super.key});
@@ -215,8 +218,8 @@ class _UserPageState extends State<UserPage> {
   // 获取个人资料，存在accountInfo
   Future<void> getAccountInfo() async {
     var token = await storage.read(key: 'token');
-    debugPrint("API: getAccountInfo");
-    debugPrint(token);
+    debugPrint("API: getAccountInfo /user");
+    // debugPrint(token);
 
     try {
       final dio = Dio();
@@ -256,8 +259,8 @@ class _UserPageState extends State<UserPage> {
   // 获取关注列表
   void getFollowList() async {
     var token = await storage.read(key: 'token');
-    debugPrint("API: getFollowList");
-    debugPrint(token);
+    debugPrint("API: getFollowList /user");
+    // debugPrint(token);
 
     try {
       final dio = Dio();
@@ -295,10 +298,39 @@ class _UserPageState extends State<UserPage> {
           content: const Text("确定要退出登录吗？"),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.pop(context);
+              onPressed: () async {
+                String token = await storage.read(key: 'token') ?? "";
+                final Dio dio = Dio();
+                dio.options.headers['Authorization'] = 'Bearer $token';
+                bool status = false;
+                try {
+                  final response = await dio.get(
+                    '$ip/api/auth/logout',
+                  );
+                  if (response.statusCode == 200) {
+                    status = true;
+                  }
+                } catch (e) {
+                  debugPrint("Exception occurred: $e");
+                }
+
+                if (!status) {
+                  if (mounted) {
+                    Navigator.pop(context);
+                    Navigator.of(context).pushNamedAndRemoveUntil(
+                        'login', (Route<dynamic> route) => false);
+                  }
+                }
+
+                await storage.delete(key: 'token').then((value) => {
+                      Navigator.pop(context),
+                      Navigator.of(context).pushNamedAndRemoveUntil(
+                          'login', (Route<dynamic> route) => false)
+                    });
+
+                /* Navigator.pop(context);
                 Navigator.of(context).pushNamedAndRemoveUntil(
-                    'login', (Route<dynamic> route) => false);
+                    'login', (Route<dynamic> route) => false); */
               },
               child: const Text("确定"),
             ),
@@ -441,6 +473,7 @@ class _UserPageState extends State<UserPage> {
   @override
   void initState() {
     super.initState();
+
     loadCourseList();
     //getAccountInfo();
     //getFollowList();
@@ -449,6 +482,11 @@ class _UserPageState extends State<UserPage> {
   @override
   Widget build(BuildContext context) {
     debugPrint("build user");
+    debugPrint("router /user: $routePath");
+    ModalRoute? route = ModalRoute.of(context);
+    String? currentRoute = route?.settings.name;
+    debugPrint("currentRoute: $currentRoute");
+
     //getAccountInfo();
     //debugPrint("current post count: ${count['post']}");
     double screenWidth = MediaQuery.of(context).size.width;
@@ -633,8 +671,9 @@ class _UserPageState extends State<UserPage> {
                         ],
                       );
                     } else {
-                      return const Center(
-                        child: CircularProgressIndicator(),
+                      return Center(
+                        child: LoadingAnimationWidget.staggeredDotsWave(
+                            color: Colors.pink, size: 25),
                       );
                     }
                   }),

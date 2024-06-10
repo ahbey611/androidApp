@@ -157,6 +157,12 @@ class _ResetPasswordPageState extends State<ResetPasswordPage>
     final String emailGetValidCodeApi =
         "http://60.205.143.180:8080/api/auth/ask-code?email=$email&type=reset";
 
+    if (email.isEmpty) {
+      validCodeSentHintText = "邮箱不能为空！";
+      sentValidCodeState = -1;
+      return;
+    }
+
     Response response;
     response = await dio.get(emailGetValidCodeApi);
     debugPrint(response.data.toString());
@@ -481,7 +487,20 @@ class _ResetPasswordPageState extends State<ResetPasswordPage>
                                                 0, 0, 10, 0),
                                             child: FilledButton(
                                               onPressed: () async {
-                                                await getValidCode();
+                                                await getValidCode().then(
+                                                    (value) =>
+                                                        ScaffoldMessenger.of(
+                                                                context)
+                                                            .showSnackBar(
+                                                          SnackBar(
+                                                            content: Text(
+                                                                validCodeSentHintText),
+                                                            duration:
+                                                                const Duration(
+                                                                    milliseconds:
+                                                                        1500),
+                                                          ),
+                                                        ));
                                               },
                                               style: FilledButton.styleFrom(
                                                 backgroundColor:
